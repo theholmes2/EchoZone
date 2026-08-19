@@ -43,6 +43,9 @@ public class PlayerInteractionGlue : NetworkBehaviour
             return;
         if (!playerInputReader.InteractPressedThisFrame)
             return;
+
+        playerInteractionSensor.RemoveMissingCandidates();
+
         if (playerInteractionSensor.Candidates.Count <= 0)
             return;
         if (playerInteractionSensor.Candidates[0] == null)

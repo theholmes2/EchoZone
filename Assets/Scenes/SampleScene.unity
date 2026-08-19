@@ -657,11 +657,85 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 1, z: 2}
+  m_LocalScale: {x: 6, y: 1, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &7110000000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2079379735453086412, guid: ae21fd2118ce41dd905c9d81701db312, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3154498690
+      objectReference: {fileID: 0}
+    - target: {fileID: 2079379735453086412, guid: ae21fd2118ce41dd905c9d81701db312, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2005019974
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: ae21fd2118ce41dd905c9d81701db312, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: ae21fd2118ce41dd905c9d81701db312, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.71
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: ae21fd2118ce41dd905c9d81701db312, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6187623105983906156, guid: ae21fd2118ce41dd905c9d81701db312, type: 3}
+      propertyPath: m_Name
+      value: HealthPotion
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ae21fd2118ce41dd905c9d81701db312, type: 3}
+--- !u!1001 &7120000000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2079379735453086412, guid: bc34d7ca290c4f57bf5cc64ad2a74798, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2596096008
+      objectReference: {fileID: 0}
+    - target: {fileID: 2079379735453086412, guid: bc34d7ca290c4f57bf5cc64ad2a74798, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2134026689
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: bc34d7ca290c4f57bf5cc64ad2a74798, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: bc34d7ca290c4f57bf5cc64ad2a74798, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: bc34d7ca290c4f57bf5cc64ad2a74798, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6187623105983906156, guid: bc34d7ca290c4f57bf5cc64ad2a74798, type: 3}
+      propertyPath: m_Name
+      value: Poison
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bc34d7ca290c4f57bf5cc64ad2a74798, type: 3}
 --- !u!1001 &8194637017443109310
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -726,6 +800,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: PickupItem
       objectReference: {fileID: 0}
+    - target: {fileID: 6187623105983906156, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6395419826228257504, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -750,3 +828,5 @@ SceneRoots:
   - {fileID: 1753159566}
   - {fileID: 14910241}
   - {fileID: 8194637017443109310}
+  - {fileID: 7110000000000000001}
+  - {fileID: 7120000000000000001}

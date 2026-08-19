@@ -7,22 +7,23 @@ using UnityEngine;
 /// </summary>
 public class PlayerInteractionSensor : MonoBehaviour
 {
-    /// <summary>상호작용을 시도하는 플레이어의 최상위 게임 오브젝트입니다.</summary>
-    private GameObject interactor;
-
     /// <summary>현재 감지 범위 안에서 발견한 상호작용 후보 목록입니다.</summary>
     private readonly List<InteractableBehaviour> candidates = new();
 
     /// <summary>외부에서 읽을 수 있는 상호작용 후보 목록입니다.</summary>
     public IReadOnlyList<InteractableBehaviour> Candidates => candidates;
 
-    /// <summary>센서를 소유한 최상위 플레이어 오브젝트를 상호작용 주체로 설정합니다.</summary>
-    private void Awake()
+    /// <summary>Despawn 또는 파괴되어 더 이상 존재하지 않는 후보를 목록에서 제거합니다.</summary>
+    public void RemoveMissingCandidates()
     {
-        // transform.root는 나를 둘러싼 가장 최상위 부모 오브젝트의 transform을 가져옵니다.
-        interactor = transform.root.gameObject;
+        for (int i = candidates.Count - 1; i >= 0; i--)
+        {
+            if (candidates[i] == null)
+            {
+                candidates.RemoveAt(i);
+            }
+        }
     }
-
 
     /// <summary>콜라이더가 감지 범위에 들어왔을 때 호출됩니다.</summary>
     /// <param name="other">감지 범위에 들어온 콜라이더입니다.</param>
@@ -42,13 +43,7 @@ public class PlayerInteractionSensor : MonoBehaviour
 
         }
 
-            bool canInteract = interactable.CanInteract(interactor);
-
-            if (canInteract)
-            {
-                candidates.Add(interactable);
-
-            }
+            candidates.Add(interactable);
 
       
     }

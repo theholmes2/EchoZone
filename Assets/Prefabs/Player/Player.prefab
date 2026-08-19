@@ -17,11 +17,14 @@ GameObject:
   - component: {fileID: 7763313358467749993}
   - component: {fileID: 2050816541580133227}
   - component: {fileID: 847201823031167250}
+  - component: {fileID: 7358134781061329745}
+  - component: {fileID: 2501504179326302848}
   - component: {fileID: 3148528279065103276}
   - component: {fileID: 5868143928337796945}
   - component: {fileID: 5800810277982610710}
   - component: {fileID: 1403116367444820447}
   - component: {fileID: 4920399587617493146}
+  - component: {fileID: 6191458482346612901}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -268,6 +271,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5deb1b48af3d3dd4e8e4424b247b5cda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteractionGlue
+--- !u!114 &7358134781061329745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2b5d6dcac204af2b4251f9d956d53c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+  config: {fileID: 11400000, guid: 9f7a6b2cd42a48579b3ff623043508ca, type: 2}
+  currentHealth: 0
+  currentStamina: 0
+  currentMana: 0
+  healthChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  staminaChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  manaChanged:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &2501504179326302848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90983287177a4fae86b2267f52f43be8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.Network.NetworkPlayerStatsState
 --- !u!114 &5868143928337796945
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -327,6 +367,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.Network.NetworkPlayerInventoryState
   itemCatalog: {fileID: 11400000, guid: c93d20763dcf467d935c979b2e298248, type: 2}
+--- !u!114 &6191458482346612901
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9f6dbcc53b64199999d75a74504d87c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.View.PlayerHealthBarGlue
+  healthBarPrefab: {fileID: 1003, guid: faff4f93685c482a909fdb8dad736df7, type: 3}
 --- !u!1 &8715770349418993638
 GameObject:
   m_ObjectHideFlags: 0
