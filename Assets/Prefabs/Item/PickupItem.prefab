@@ -48,6 +48,7 @@ GameObject:
   - component: {fileID: 7301954651156048921}
   - component: {fileID: 4837046391172058264}
   - component: {fileID: 8093318657361247206}
+  - component: {fileID: 9001900190019001}
   m_Layer: 0
   m_Name: PickupItem
   m_TagString: Untagged
@@ -55,6 +56,19 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &9001900190019001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6187623105983906156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e85d6645ed24b24af44f8df1ae0230c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Migration.WorldItemMigrationSource
+  worldItemId: 
 --- !u!4 &5529588769096061152
 Transform:
   m_ObjectHideFlags: 0

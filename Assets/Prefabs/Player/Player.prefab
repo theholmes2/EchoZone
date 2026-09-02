@@ -25,6 +25,8 @@ GameObject:
   - component: {fileID: 1403116367444820447}
   - component: {fileID: 4920399587617493146}
   - component: {fileID: 6191458482346612901}
+  - component: {fileID: 7744838528211057001}
+  - component: {fileID: 7744838528211057002}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -380,6 +382,30 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.View.PlayerHealthBarGlue
   healthBarPrefab: {fileID: 1003, guid: faff4f93685c482a909fdb8dad736df7, type: 3}
+--- !u!114 &7744838528211057001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad092a854aa740eb8c04b1f068c50b26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Reconnect.PlayerSessionCacheReporter
+--- !u!114 &7744838528211057002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e729e226c1074fe7adfa40b17b18fe10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Reconnect.PlayerReconnectTicketBridge
 --- !u!1 &8715770349418993638
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,0 +1,18 @@
+{
+  "sourceScene": "Assets/Scenes/Kenney_ExpandedCity.unity",
+  "targetScene": "Assets/Scenes/Kenney_City2x2_Test.unity",
+  "sourceCityRoot": "CITY_GRID_8x8",
+  "targetCityRoot": "CITY_GRID_2x2_TEST",
+  "selectedDistricts": [
+    "District_04_04_City_Plaza",
+    "District_05_04",
+    "District_04_05",
+    "District_05_05"
+  ],
+  "keptRoadIndices": [3, 4, 5],
+  "removeCityChildren": ["60_Character_Gallery__Static_Candidates"],
+  "removeSceneRoots": ["Floor"],
+  "playerSpawn": { "x": -66.675, "y": 1.25, "z": -66.675 },
+  "cameraOffset": { "x": 30.0, "y": 38.0, "z": -30.0 },
+  "cameraFieldOfView": 48.0
+}

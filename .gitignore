@@ -63,6 +63,12 @@ ExportedObj/
 *.opendb
 *.VC.db
 
+# Cloud Code C# module source must keep its deployable solution files.
+!/HostMigrationModule/*.sln
+!/HostMigrationModule/Project/*.csproj
+/HostMigrationModule/Project/bin/
+/HostMigrationModule/Project/obj/
+
 # Unity3D generated meta files
 *.pidb.meta
 *.pdb.meta

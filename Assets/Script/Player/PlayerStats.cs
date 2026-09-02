@@ -14,6 +14,9 @@ public sealed class PlayerStats : MonoBehaviour
     [SerializeField] private int currentStamina;
     [SerializeField] private int currentMana;
 
+    /// <summary>Host Migration 직후 등 서버가 일시적으로 피해를 차단하는 상태입니다.</summary>
+    private bool isDamageBlocked;
+
     [Header("State Events")]
     [SerializeField] private UnityEvent<int> healthChanged = new();
     [SerializeField] private UnityEvent<int> staminaChanged = new();
@@ -39,6 +42,15 @@ public sealed class PlayerStats : MonoBehaviour
 
     /// <summary>현재 체력이 모두 소진되었는지 나타냅니다.</summary>
     public bool IsDead => currentHealth <= 0;
+
+    /// <summary>현재 피해 적용이 일시적으로 차단되어 있는지 나타냅니다.</summary>
+    public bool IsDamageBlocked => isDamageBlocked;
+
+    /// <summary>외부 진행 Glue가 일시적인 피해 차단 상태를 설정합니다.</summary>
+    public void SetDamageBlocked(bool blocked)
+    {
+        isDamageBlocked = blocked;
+    }
 
     /// <summary>생성된 플레이어의 현재 상태를 설정된 최대치로 초기화합니다.</summary>
     private void Awake()
@@ -68,7 +80,7 @@ public sealed class PlayerStats : MonoBehaviour
     /// <returns>실제로 차감된 체력입니다.</returns>
     public int ApplyDamage(int requestedDamage)
     {
-        if (requestedDamage <= 0 || currentHealth <= 0)
+        if (requestedDamage <= 0 || currentHealth <= 0 || isDamageBlocked)
         {
             return 0;
         }

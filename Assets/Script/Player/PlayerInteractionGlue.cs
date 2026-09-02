@@ -46,18 +46,20 @@ public class PlayerInteractionGlue : NetworkBehaviour
 
         playerInteractionSensor.RemoveMissingCandidates();
 
-        if (playerInteractionSensor.Candidates.Count <= 0)
-            return;
-        if (playerInteractionSensor.Candidates[0] == null)
-            return;
+        // Despawn(false)한 대상은 여전히 존재하므로 첫 후보만 검사하면
+        // 이후 입력까지 막힌다. 네트워크 유효성 판단은 센서가 아닌 Glue에서 한다.
+        foreach (InteractableBehaviour candidate in playerInteractionSensor.Candidates)
+        {
+            if (candidate == null || !candidate.isActiveAndEnabled)
+                continue;
 
-        InteractableBehaviour interactableBehaviour = playerInteractionSensor.Candidates[0];
-        NetworkObject networkObject = interactableBehaviour.GetComponent<NetworkObject>();
-        if (networkObject == null)
-            return;
-        if (networkObject.IsSpawned == false)
-            return;
-        RequestInteractRpc(networkObject.NetworkObjectId);
+            NetworkObject networkObject = candidate.GetComponent<NetworkObject>();
+            if (networkObject == null || !networkObject.IsSpawned)
+                continue;
+
+            RequestInteractRpc(networkObject.NetworkObjectId);
+            break;
+        }
     }
 
     /// <summary>

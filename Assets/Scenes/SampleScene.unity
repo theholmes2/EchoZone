@@ -131,6 +131,11 @@ GameObject:
   - component: {fileID: 14910240}
   - component: {fileID: 14910239}
   - component: {fileID: 14910242}
+  - component: {fileID: 14910244}
+  - component: {fileID: 14910245}
+  - component: {fileID: 14910246}
+  - component: {fileID: 14910247}
+  - component: {fileID: 14910248}
   m_Layer: 0
   m_Name: NetworkSystem
   m_TagString: Untagged
@@ -189,7 +194,7 @@ MonoBehaviour:
       - {fileID: 11400000, guid: 8fca9bf0878830d4186b361ce2ebb16c, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
-    ConnectionApproval: 0
+    ConnectionApproval: 1
     ConnectionData: 
     EnableTimeResync: 0
     TimeResyncInterval: 30
@@ -236,6 +241,78 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1ca197e4fcb670439df0f36e1fc40a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkStartUI
+  relaySessionGlue: {fileID: 14910245}
+  cloudCheckpointGlue: {fileID: 14910248}
+--- !u!114 &14910244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14910238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 128264e53d319dd45932d57799f93341, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Authentication.UnityAuthenticationGlue
+--- !u!114 &14910245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14910238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d763553dceefa9f40a969ec3e91affab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Relay.RelaySessionGlue
+  authenticationGlue: {fileID: 14910244}
+  config: {fileID: 11400000, guid: 377cc390685d41fdb4db7b7c12628b9f, type: 2}
+  migrationSnapshotCollector: {fileID: 14910247}
+  cloudCheckpointGlue: {fileID: 14910248}
+  cloudCheckpointGlue: {fileID: 14910248}
+--- !u!114 &14910246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14910238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2683af68642c4226a5c9af9dfb14bed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Reconnect.NetworkPlayerSessionCacheGlue
+  config: {fileID: 11400000, guid: 377cc390685d41fdb4db7b7c12628b9f, type: 2}
+  itemCatalog: {fileID: 11400000, guid: c93d20763dcf467d935c979b2e298248, type: 2}
+--- !u!114 &14910247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14910238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa16de3767df44c0a9bb0af7111bbdd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Migration.HostMigrationSnapshotCollector
+--- !u!114 &14910248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14910238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad892615ab324efb863b7e0ddd345143, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Migration.HostMigrationCloudCheckpointGlue
+  collector: {fileID: 14910247}
+  config: {fileID: 11400000, guid: 3e9ec1db8c0a42aa89bc71a9e5a73a0d, type: 2}
+  relaySessionGlue: {fileID: 14910245}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,7 +522,7 @@ Light:
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
-  m_ColorTemperature: 5000
+  m_ColorTemperature: 7897
   m_UseColorTemperature: 1
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
@@ -746,7 +823,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1159641090495905631, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: quantity
-      value: 5
+      value: 999
       objectReference: {fileID: 0}
     - target: {fileID: 1159641090495905631, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: itemDefinition
@@ -758,7 +835,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5529588769096061152, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0
+      value: -4
       objectReference: {fileID: 0}
     - target: {fileID: 5529588769096061152, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: m_LocalPosition.y
@@ -798,11 +875,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6187623105983906156, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: m_Name
-      value: PickupItem
+      value: PickupItem_999
       objectReference: {fileID: 0}
     - target: {fileID: 6187623105983906156, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6395419826228257504, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
       propertyPath: m_IsActive
@@ -818,6 +895,43 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+--- !u!1001 &7130000000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1159641090495905631, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+      propertyPath: quantity
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2079379735453086412, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2863047195
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529588769096061152, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6187623105983906156, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
+      propertyPath: m_Name
+      value: PickupItem_2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3575ce57afe76e340bd87b309b29f03d, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -830,3 +944,4 @@ SceneRoots:
   - {fileID: 8194637017443109310}
   - {fileID: 7110000000000000001}
   - {fileID: 7120000000000000001}
+  - {fileID: 7130000000000000001}

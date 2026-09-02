@@ -1,0 +1,27 @@
+{
+  "sidewalkWidth": 2.0,
+  "doorApronLength": 2.6,
+  "routeClearance": 0.35,
+  "pathCellSize": 1.0,
+  "entries": [
+    { "model": "building-a", "entrances": [{ "face": "NegZ", "lateral": -0.31, "doorWidth": 2.2 }] },
+    { "model": "building-b", "entrances": [{ "face": "NegZ", "lateral": 0.27, "doorWidth": 1.5 }] },
+    { "model": "building-c", "entrances": [{ "face": "NegZ", "lateral": 0.30, "doorWidth": 1.5 }] },
+    { "model": "building-d", "entrances": [{ "face": "NegZ", "lateral": -0.25, "doorWidth": 2.2 }] },
+    { "model": "building-e", "entrances": [{ "face": "PosZ", "lateral": 0.30, "doorWidth": 1.4 }, { "face": "NegZ", "lateral": -0.25, "doorWidth": 1.5 }] },
+    { "model": "building-f", "entrances": [{ "face": "NegZ", "lateral": 0.28, "doorWidth": 1.5 }] },
+    { "model": "building-g", "entrances": [{ "face": "NegZ", "lateral": 0.27, "doorWidth": 2.0 }] },
+    { "model": "building-h", "entrances": [{ "face": "NegZ", "lateral": 0.28, "doorWidth": 1.5 }] },
+    { "model": "building-i", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 2.0 }] },
+    { "model": "building-j", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 2.0 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 2.0 }] },
+    { "model": "building-k", "entrances": [{ "face": "NegZ", "lateral": 0.0, "doorWidth": 1.5 }] },
+    { "model": "building-l", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 2.0 }] },
+    { "model": "building-m", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 2.0 }] },
+    { "model": "building-n", "entrances": [{ "face": "PosX", "lateral": 0.0, "doorWidth": 2.2 }] },
+    { "model": "building-skyscraper-a", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 1.5 }] },
+    { "model": "building-skyscraper-b", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 1.5 }] },
+    { "model": "building-skyscraper-c", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 2.0 }] },
+    { "model": "building-skyscraper-d", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 2.0 }] },
+    { "model": "building-skyscraper-e", "entrances": [{ "face": "PosZ", "lateral": 0.0, "doorWidth": 1.5 }, { "face": "NegZ", "lateral": 0.0, "doorWidth": 2.0 }] }
+  ]
+}
