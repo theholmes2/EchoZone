@@ -86,6 +86,61 @@ public class PlayerInventory : MonoBehaviour
         return addedQuantity;
     }
 
+    /// <summary>모든 슬롯에서 지정한 아이템의 총수량을 계산합니다.</summary>
+    public int GetTotalQuantity(ItemData item)
+    {
+        if (item == null)
+        {
+            return 0;
+        }
+
+        int total = 0;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            InventorySlot slot = slots[i];
+            if (slot != null && slot.Item == item)
+            {
+                total += slot.Quantity;
+            }
+        }
+
+        return total;
+    }
+
+    /// <summary>뒤쪽 슬롯부터 지정한 아이템을 가능한 수량만큼 제거합니다.</summary>
+    /// <returns>실제로 제거된 수량입니다.</returns>
+    public int RemoveUpToQuantity(ItemData item, int requestedQuantity)
+    {
+        if (item == null || requestedQuantity <= 0)
+        {
+            return 0;
+        }
+
+        int remaining = requestedQuantity;
+        for (int i = slots.Count - 1; i >= 0 && remaining > 0; i--)
+        {
+            InventorySlot slot = slots[i];
+            if (slot == null || slot.Item != item)
+            {
+                continue;
+            }
+
+            remaining -= slot.Remove(remaining);
+            if (slot.Quantity <= 0)
+            {
+                slots.RemoveAt(i);
+            }
+        }
+
+        int removed = requestedQuantity - remaining;
+        if (removed > 0)
+        {
+            inventoryChanged.Invoke();
+        }
+
+        return removed;
+    }
+
     /// <summary>
     /// 네트워크 등 외부 상태에서 받은 슬롯 목록으로 현재 인벤토리 복사본을 교체합니다.
     /// </summary>

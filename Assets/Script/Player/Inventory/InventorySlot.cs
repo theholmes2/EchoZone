@@ -55,4 +55,19 @@ public sealed class InventorySlot
 
         return amount - addedAmount;
     }
+
+    /// <summary>현재 슬롯에서 요청한 수량만큼 제거합니다.</summary>
+    /// <param name="amount">제거하려는 수량입니다.</param>
+    /// <returns>실제로 제거된 수량입니다.</returns>
+    public int Remove(int amount)
+    {
+        if (amount <= 0)
+        {
+            return 0;
+        }
+
+        int removedAmount = Mathf.Min(amount, quantity);
+        quantity -= removedAmount;
+        return removedAmount;
+    }
 }

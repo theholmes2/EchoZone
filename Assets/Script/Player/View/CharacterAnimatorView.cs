@@ -18,26 +18,32 @@ namespace EchoZone.Player.View
             config = animationConfig;
         }
 
-        public void ManualUpdate(Vector2 movement, float deltaTime)
+        /// <summary>
+        /// 캐릭터의 시선(회전)을 즉시 지정된 방향으로 돌립니다.
+        /// </summary>
+        public void SetFacing(Vector3 aimDirection, float turnDegreesPerSecond, float deltaTime)
         {
-            if (animator == null || config == null)
+            if (aimDirection.sqrMagnitude <= 0.0001f)
             {
                 return;
             }
 
-            bool moving = movement.sqrMagnitude > config.MovementThreshold * config.MovementThreshold;
-            animator.SetBool(Moving, moving);
-            if (!moving)
-            {
-                return;
-            }
-
-            Vector3 direction = new(movement.x, 0f, movement.y);
-            Quaternion facing = Quaternion.LookRotation(direction.normalized, Vector3.up);
-            transform.rotation = Quaternion.RotateTowards(
-                transform.rotation,
-                facing,
-                config.TurnDegreesPerSecond * deltaTime);
+            Quaternion facing = Quaternion.LookRotation(aimDirection.normalized, Vector3.up);
+            transform.rotation = turnDegreesPerSecond > 0f
+                ? Quaternion.RotateTowards(transform.rotation, facing, turnDegreesPerSecond * deltaTime)
+                : facing;
         }
+
+        /// <summary>
+        /// 이동 변위를 기반으로 달리기/걷기 애니메이션 상태를 갱신합니다.
+        /// </summary>
+        public void UpdateMovementAnimation(Vector2 movementDelta)
+        {
+            if (animator == null || config == null) return;
+
+            bool moving = movementDelta.sqrMagnitude > config.MovementThreshold * config.MovementThreshold;
+            animator.SetBool(Moving, moving);
+        }
+       
     }
 }

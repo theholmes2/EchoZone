@@ -260,6 +260,11 @@ GameObject:
   - component: {fileID: 6191458482346612901}
   - component: {fileID: 7744838528211057001}
   - component: {fileID: 7744838528211057002}
+  - component: {fileID: 3327692729612160208}
+  - component: {fileID: 7157006283994021518}
+  - component: {fileID: 6950785846464626292}
+  - component: {fileID: 9165947544703885222}
+  - component: {fileID: 9165947544703885223}
   m_Layer: 8
   m_Name: KenneyNetworkPlayer
   m_TagString: Player
@@ -403,7 +408,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2528927650
+  GlobalObjectIdHash: 3203824161
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -577,6 +582,10 @@ MonoBehaviour:
   movementMotor: {fileID: 5868143928337796945}
   movementCamera: {fileID: 0}
   characterView: {fileID: 5067870779452561668}
+  aimInputGlue: {fileID: 6950785846464626292}
+  aimPresentationGlue: {fileID: 3327692729612160208}
+  seeThroughViewGlue: {fileID: 9165947544703885223}
+  weaponFireGlue: {fileID: 7157006283994021518}
 --- !u!114 &1403116367444820447
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -647,6 +656,88 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Reconnect.PlayerReconnectTicketBridge
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3327692729612160208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba370b211c239da4694a62e81f11046f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Combat.View.CharacterAimPresentationGlue
+  characterView: {fileID: 5067870779452561668}
+  config: {fileID: 11400000, guid: cfa6f28d96fe6a347ba3564ba84372e8, type: 2}
+--- !u!114 &7157006283994021518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2bcb327a4ccc9a4283ec3689e51888e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Combat.Glue.NetworkWeaponFireGlue
+  ShowTopMostFoldoutHeaderGroup: 1
+  config: {fileID: 11400000, guid: cfa6f28d96fe6a347ba3564ba84372e8, type: 2}
+  muzzle: {fileID: 999075888609973355}
+  playerBody: {fileID: 9023773892420820882}
+  playerInventory: {fileID: 847201823031167250}
+--- !u!114 &6950785846464626292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2073c7a88006334ca6f5d86b1fb7d0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Combat.Glue.PlayerAimInputGlue
+  gameplayCamera: {fileID: 0}
+  aimOrigin: {fileID: 5539142403583776848}
+  aimSurfaceMask:
+    serializedVersion: 2
+    m_Bits: 1
+  maximumRayDistance: 500
+  networkWeaponFireGlue: {fileID: 7157006283994021518}
+  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  actionMapName: Player
+  fireActionName: Attack
+  reloadActionName: Reload
+--- !u!114 &9165947544703885222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6c1103f5060e4149b85d99da2af414e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.Glue.WeaponFireEventBinderGlue
+  networkWeaponFireGlue: {fileID: 7157006283994021518}
+  muzzleFlashEffectBrick: {fileID: 3834780981528478418}
+--- !u!114 &9165947544703885223
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a15225e12c38b347a249d28aa0362cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.Glue.PlayerSeeThroughViewGlue
+  ShowTopMostFoldoutHeaderGroup: 1
+  characterAnimatorView: {fileID: 5067870779452561668}
 --- !u!1 &6207575198001256260
 GameObject:
   m_ObjectHideFlags: 0
@@ -839,7 +930,8 @@ Transform:
   m_LocalPosition: {x: 0.09989677, y: 0.1115, z: 0.011499999}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 999075888609973355}
   m_Father: {fileID: 3295783873395032408}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8715770349418993638
@@ -973,3 +1065,108 @@ Transform:
   - {fileID: 3295783873395032408}
   m_Father: {fileID: 4676092885299460129}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &9055530102373036627
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 999075888609973355}
+  m_Layer: 0
+  m_Name: Muzzle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &999075888609973355
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9055530102373036627}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: 0, z: 0.359}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 9170155947307568152}
+  m_Father: {fileID: 7523689237553805290}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &4695892924039118175
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 999075888609973355}
+    m_Modifications:
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5531459672349024074, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+      propertyPath: m_Name
+      value: MuzzleFlashLight
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+--- !u!114 &3834780981528478418 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8366783485468409741, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+  m_PrefabInstance: {fileID: 4695892924039118175}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03d099f7ed728cc4685e13d9e0511060, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.View.MuzzleFlashEffectBrick
+--- !u!4 &9170155947307568152 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4497364862097895751, guid: a260828582836b94bbd43dc305fc2fe0, type: 3}
+  m_PrefabInstance: {fileID: 4695892924039118175}
+  m_PrefabAsset: {fileID: 0}
