@@ -9,6 +9,7 @@ namespace EchoZone.Online.Migration
     {
         [SerializeField] private string worldItemId = string.Empty;
 
+        /// <summary>itemPickup 값을 저장합니다.</summary>
         private ItemPickup itemPickup;
 
         /// <summary>세션이 바뀌어도 동일 월드 아이템을 찾을 식별자입니다.</summary>
@@ -50,7 +51,7 @@ namespace EchoZone.Online.Migration
                 worldItemId,
                 itemPickup.ItemDefinition.ItemId,
                 itemPickup.Quantity,
-                itemPickup.IsEmpty);
+                itemPickup.IsEmpty, transform.position, transform.rotation, true);
         }
 
         /// <summary>새 Host가 받은 수량과 고갈 상태를 현재 월드 아이템 Brick에 적용합니다.</summary>
@@ -69,6 +70,12 @@ namespace EchoZone.Online.Migration
             }
 
             itemPickup.SetQuantity(snapshot.IsDepleted ? 0 : snapshot.Quantity);
+            if (snapshot.HasTransform)
+            {
+                var obj = GetComponent<Unity.Netcode.NetworkObject>();
+                if (obj != null && obj.IsSpawned) SessionWorldMigrationGlue.Place(obj, snapshot.Position, snapshot.Rotation);
+                else transform.SetPositionAndRotation(snapshot.Position, snapshot.Rotation);
+            }
         }
 
         /// <summary>씬에 직접 배치된 오브젝트를 다시 찾을 수 있도록 씬 경로와 형제 순서로 ID를 만듭니다.</summary>

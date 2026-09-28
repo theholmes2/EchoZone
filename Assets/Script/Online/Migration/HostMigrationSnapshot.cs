@@ -36,12 +36,16 @@ namespace EchoZone.Online.Migration
             string worldItemId,
             string itemId,
             int quantity,
-            bool isDepleted)
+            bool isDepleted,
+            UnityEngine.Vector3 position = default,
+            UnityEngine.Quaternion rotation = default,
+            bool hasTransform = false)
         {
             WorldItemId = worldItemId ?? string.Empty;
             ItemId = itemId ?? string.Empty;
             Quantity = quantity;
             IsDepleted = isDepleted;
+            Position = position; Rotation = rotation; HasTransform = hasTransform;
         }
 
         /// <summary>네트워크 세션이 바뀌어도 유지되는 월드 인스턴스 식별자입니다.</summary>
@@ -55,6 +59,12 @@ namespace EchoZone.Online.Migration
 
         /// <summary>수량이 소진되어 월드에서 제거된 상태인지 나타냅니다.</summary>
         public bool IsDepleted { get; }
+        /// <summary>구형 복사본과 구분할 위치·회전 보유 여부입니다.</summary>
+        public bool HasTransform { get; }
+        /// <summary>고정 ID 월드 아이템의 저장 위치입니다.</summary>
+        public UnityEngine.Vector3 Position { get; }
+        /// <summary>고정 ID 월드 아이템의 저장 회전입니다.</summary>
+        public UnityEngine.Quaternion Rotation { get; }
     }
 
     /// <summary>새 Host가 게임 상태를 복원할 때 사용할 플레이어와 월드 아이템의 전체 복사본입니다.</summary>
@@ -69,9 +79,11 @@ namespace EchoZone.Online.Migration
             string runId,
             long snapshotVersion,
             IReadOnlyList<HostMigrationPlayerSnapshot> players,
-            IReadOnlyList<WorldItemMigrationSnapshot> worldItems)
+            IReadOnlyList<WorldItemMigrationSnapshot> worldItems,
+            SessionWorldSnapshot world = null)
         {
             RunId = runId ?? string.Empty;
+            World = world;
             SnapshotVersion = snapshotVersion;
             Players = players != null
                 ? new List<HostMigrationPlayerSnapshot>(players)
@@ -83,6 +95,8 @@ namespace EchoZone.Online.Migration
 
         /// <summary>이 Snapshot이 속한 한 번의 게임 진행 식별자입니다.</summary>
         public string RunId { get; }
+        /// <summary>구형 Snapshot에서는 null인 확장 세션 상태입니다.</summary>
+        public SessionWorldSnapshot World { get; }
 
         /// <summary>같은 Run 안에서 최신 Snapshot을 구분할 증가 버전입니다.</summary>
         public long SnapshotVersion { get; }

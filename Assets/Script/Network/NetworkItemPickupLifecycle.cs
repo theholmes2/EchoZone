@@ -14,9 +14,13 @@ public sealed class NetworkItemPickupLifecycle : NetworkBehaviour
     /// <summary>서버가 모든 클라이언트에서 제거할 네트워크 오브젝트입니다.</summary>
     private NetworkObject targetNetworkObject;
 
+    /// <summary>renderers 값을 저장합니다.</summary>
     private Renderer[] renderers;
+    /// <summary>colliders 값을 저장합니다.</summary>
     private Collider[] colliders;
+    /// <summary>rigidbodies 값을 저장합니다.</summary>
     private Rigidbody[] rigidbodies;
+    /// <summary>originalKinematicStates 값을 저장합니다.</summary>
     private bool[] originalKinematicStates;
 
     /// <summary>같은 게임 오브젝트에 있는 아이템과 네트워크 오브젝트를 찾습니다.</summary>
@@ -46,6 +50,7 @@ public sealed class NetworkItemPickupLifecycle : NetworkBehaviour
         itemPickup?.RemoveDepletedListener(HandleDepleted);
     }
 
+    /// <summary>OnNetworkSpawn 작업을 수행합니다.</summary>
     public override void OnNetworkSpawn()
     {
         SetWorldPresentation(itemPickup != null && !itemPickup.IsEmpty);

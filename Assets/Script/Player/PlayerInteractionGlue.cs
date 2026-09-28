@@ -12,10 +12,13 @@ public class PlayerInteractionGlue : NetworkBehaviour
 
     /// <summary>현재 플레이어의 이동 및 상호작용 입력을 제공하는 입력 브릭입니다.</summary>
     private PlayerInputReader playerInputReader;
+    /// <summary>사망 중 아이템 획득 요청을 차단하는 체력 데이터입니다.</summary>
+    private PlayerStats stats;
 
     /// <summary>이 플레이어에 연결된 입력 리더와 상호작용 센서 참조를 준비합니다.</summary>
     private void Awake()
     {
+        stats = GetComponent<PlayerStats>();
         playerInteractionSensor = GetComponentInChildren<PlayerInteractionSensor>();
         if (playerInteractionSensor == null)
         {
@@ -52,6 +55,8 @@ public class PlayerInteractionGlue : NetworkBehaviour
         {
             if (candidate == null || !candidate.isActiveAndEnabled)
                 continue;
+            if (candidate is EchoZone.Pet.PetClaimInteractable && !candidate.CanInteract(gameObject))
+                continue;
 
             NetworkObject networkObject = candidate.GetComponent<NetworkObject>();
             if (networkObject == null || !networkObject.IsSpawned)
@@ -69,6 +74,8 @@ public class PlayerInteractionGlue : NetworkBehaviour
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
     private void RequestInteractRpc(ulong targetNetworkObjectId)
     {
+        if (!IsServer || !IsSpawned || (stats != null && stats.IsDead) ||
+            (TryGetComponent<EchoZone.Heist.PlayerWalletGlue>(out var wallet) && wallet.IsEscaping)) return;
         bool found = NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(
       targetNetworkObjectId,out NetworkObject targetNetworkObject);
 

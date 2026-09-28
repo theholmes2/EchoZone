@@ -6,6 +6,7 @@ using UnityEngine;
 [CreateAssetMenu(
     fileName = "RelaySessionConfig",
     menuName = "EchoZone/Network/Relay Session Config")]
+/// <summary>RelaySessionConfig 관련 기능과 데이터를 제공하는 형식입니다.</summary>
 public sealed class RelaySessionConfig : ScriptableObject
 {
     [Header("Session Capacity")]
@@ -24,10 +25,13 @@ public sealed class RelaySessionConfig : ScriptableObject
     [Header("Host Migration")]
     [Tooltip("Dashboard Disconnect Host Migration Time과 맞출 안내용 유예 시간. 서버 설정을 변경하지 않습니다.")]
     [SerializeField, Min(1f)] private float hostMigrationGraceSeconds = 15f;
+    /// <summary>HostMigrationGraceSeconds 값을 제공합니다.</summary>
     public float HostMigrationGraceSeconds => Mathf.Max(1f, hostMigrationGraceSeconds);
     [SerializeField, Min(1f)] private float sessionRecoveryPollSeconds = 5f;
     [SerializeField, Min(1f)] private float sessionRecoveryTimeoutSeconds = 240f;
+    /// <summary>SessionRecoveryPollSeconds 값을 제공합니다.</summary>
     public float SessionRecoveryPollSeconds => Mathf.Max(1f, sessionRecoveryPollSeconds);
+    /// <summary>SessionRecoveryTimeoutSeconds 값을 제공합니다.</summary>
     public float SessionRecoveryTimeoutSeconds => Mathf.Max(1f, sessionRecoveryTimeoutSeconds);
     [SerializeField, Min(1f)] private float migrationSnapshotIntervalSeconds = 5f;
     [SerializeField, Min(1f)] private float migrationDataTimeoutSeconds = 5f;

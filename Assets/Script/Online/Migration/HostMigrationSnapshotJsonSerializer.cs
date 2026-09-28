@@ -9,7 +9,7 @@ namespace EchoZone.Online.Migration
     public sealed class HostMigrationSnapshotJsonSerializer
     {
         /// <summary>현재 코드가 읽고 쓸 수 있는 JSON 구조 버전입니다.</summary>
-        private const int CurrentSchemaVersion = 1;
+        private const int CurrentSchemaVersion = 2;
 
         /// <summary>게임 로직용 Snapshot을 JSON 문자열로 변환합니다.</summary>
         /// <param name="snapshot">직렬화할 Host Migration 복사본입니다.</param>
@@ -44,7 +44,7 @@ namespace EchoZone.Online.Migration
                 HostMigrationSnapshotDto dto =
                     JsonUtility.FromJson<HostMigrationSnapshotDto>(json);
                 if (dto == null ||
-                    dto.schemaVersion != CurrentSchemaVersion ||
+                    (dto.schemaVersion < 1 || dto.schemaVersion > CurrentSchemaVersion) ||
                     string.IsNullOrWhiteSpace(dto.runId) ||
                     dto.snapshotVersion <= 0)
                 {
@@ -68,7 +68,8 @@ namespace EchoZone.Online.Migration
             {
                 schemaVersion = CurrentSchemaVersion,
                 runId = snapshot.RunId,
-                snapshotVersion = snapshot.SnapshotVersion
+                snapshotVersion = snapshot.SnapshotVersion,
+                world = snapshot.World
             };
 
             for (int i = 0; i < snapshot.Players.Count; i++)
@@ -116,7 +117,8 @@ namespace EchoZone.Online.Migration
                     worldItemId = worldItem.WorldItemId,
                     itemId = worldItem.ItemId,
                     quantity = worldItem.Quantity,
-                    isDepleted = worldItem.IsDepleted
+                    isDepleted = worldItem.IsDepleted,
+                    position = worldItem.Position, rotation = worldItem.Rotation, hasTransform = worldItem.HasTransform
                 });
             }
 
@@ -188,7 +190,7 @@ namespace EchoZone.Online.Migration
                         itemDto.worldItemId,
                         itemDto.itemId,
                         itemDto.quantity,
-                        itemDto.isDepleted));
+                        itemDto.isDepleted, itemDto.position, itemDto.rotation, itemDto.hasTransform));
                 }
             }
 
@@ -196,17 +198,25 @@ namespace EchoZone.Online.Migration
                 dto.runId,
                 dto.snapshotVersion,
                 players,
-                worldItems);
+                worldItems,
+                dto.schemaVersion >= 2 && !string.IsNullOrWhiteSpace(dto.world?.worldId) ? dto.world : null);
         }
 
         /// <summary>전체 Host Migration Snapshot의 JSON 필드 구조입니다.</summary>
         [Serializable]
         private sealed class HostMigrationSnapshotDto
         {
+            /// <summary>버전 2의 확장 월드이며 버전 1은 null입니다.</summary>
+            public SessionWorldSnapshot world;
+            /// <summary>schemaVersion 값을 저장합니다.</summary>
             public int schemaVersion;
+            /// <summary>runId 값을 저장합니다.</summary>
             public string runId = string.Empty;
+            /// <summary>snapshotVersion 값을 저장합니다.</summary>
             public long snapshotVersion;
+            /// <summary>players 값을 저장합니다.</summary>
             public List<PlayerMigrationDto> players = new();
+            /// <summary>worldItems 값을 저장합니다.</summary>
             public List<WorldItemMigrationDto> worldItems = new();
         }
 
@@ -214,10 +224,15 @@ namespace EchoZone.Online.Migration
         [Serializable]
         private sealed class PlayerMigrationDto
         {
+            /// <summary>playerId 값을 저장합니다.</summary>
             public string playerId = string.Empty;
+            /// <summary>health 값을 저장합니다.</summary>
             public int health;
+            /// <summary>stamina 값을 저장합니다.</summary>
             public int stamina;
+            /// <summary>mana 값을 저장합니다.</summary>
             public int mana;
+            /// <summary>inventorySlots 값을 저장합니다.</summary>
             public List<InventorySlotDto> inventorySlots = new();
         }
 
@@ -225,7 +240,9 @@ namespace EchoZone.Online.Migration
         [Serializable]
         private sealed class InventorySlotDto
         {
+            /// <summary>itemId 값을 저장합니다.</summary>
             public string itemId = string.Empty;
+            /// <summary>quantity 값을 저장합니다.</summary>
             public int quantity;
         }
 
@@ -233,9 +250,17 @@ namespace EchoZone.Online.Migration
         [Serializable]
         private sealed class WorldItemMigrationDto
         {
+            /// <summary>버전 2에서 보존하는 아이템 Transform입니다.</summary>
+            public Vector3 position;
+            public Quaternion rotation;
+            public bool hasTransform;
+            /// <summary>worldItemId 값을 저장합니다.</summary>
             public string worldItemId = string.Empty;
+            /// <summary>itemId 값을 저장합니다.</summary>
             public string itemId = string.Empty;
+            /// <summary>quantity 값을 저장합니다.</summary>
             public int quantity;
+            /// <summary>isDepleted 값을 저장합니다.</summary>
             public bool isDepleted;
         }
     }

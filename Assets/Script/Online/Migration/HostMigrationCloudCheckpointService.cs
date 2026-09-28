@@ -120,8 +120,11 @@ namespace EchoZone.Online.Migration
     [Serializable]
     public sealed class CloudCheckpointSaveResponse
     {
+        /// <summary>Saved 값을 저장합니다.</summary>
         public bool Saved;
+        /// <summary>SnapshotVersion 값을 저장합니다.</summary>
         public long SnapshotVersion;
+        /// <summary>Message 값을 저장합니다.</summary>
         public string Message;
     }
 
@@ -129,8 +132,11 @@ namespace EchoZone.Online.Migration
     [Serializable]
     public sealed class CloudCheckpointLoadResponse
     {
+        /// <summary>Found 값을 저장합니다.</summary>
         public bool Found;
+        /// <summary>SnapshotVersion 값을 저장합니다.</summary>
         public long SnapshotVersion;
+        /// <summary>SnapshotJson 값을 저장합니다.</summary>
         public string SnapshotJson;
     }
 }

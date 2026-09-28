@@ -9,10 +9,13 @@ namespace EchoZone.Player.View
     public sealed class HealthBarView : MonoBehaviour
     {
         [SerializeField] private RectTransform fillRect;
-        [SerializeField] private Vector3 localOffset = new(0f, 1.4f, 0f);
+        [SerializeField] private Vector3 localOffset = new(0f, 3.2f, 0f);
 
+        /// <summary>playerStats 값을 저장합니다.</summary>
         private PlayerStats playerStats;
+        /// <summary>targetCamera 값을 저장합니다.</summary>
         private Camera targetCamera;
+        /// <summary>fullFillAnchorMaxX 값을 저장합니다.</summary>
         private float fullFillAnchorMaxX;
 
         /// <summary>프리팹에 설정된 최대 체력바 너비를 저장합니다.</summary>

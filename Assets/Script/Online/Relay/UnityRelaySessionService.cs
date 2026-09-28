@@ -13,6 +13,7 @@ namespace EchoZone.Online.Relay
     /// </summary>
     public sealed class UnityRelaySessionService
     {
+        /// <summary>RunIdPropertyKey 값을 저장합니다.</summary>
         private const string RunIdPropertyKey = "echozone_run_id";
         /// <summary>현재 플레이어가 생성하거나 참가한 Session입니다.</summary>
         private ISession activeSession;
@@ -29,8 +30,11 @@ namespace EchoZone.Online.Relay
         /// <summary>마이그레이션 데이터 처리 제한 시간입니다.</summary>
         private TimeSpan migrationDataTimeout = TimeSpan.FromSeconds(5);
 
+        /// <summary>SessionHostChanged 상태가 발생했음을 알리는 이벤트입니다.</summary>
         public event Action<string> SessionHostChanged;
+        /// <summary>SessionMigrated 상태가 발생했음을 알리는 이벤트입니다.</summary>
         public event Action SessionMigrated;
+        /// <summary>MigrationFailed 상태가 발생했음을 알리는 이벤트입니다.</summary>
         public event Action<string> MigrationFailed;
 
         /// <summary>로비를 떠나지 않고 서버 상태와 이벤트 구독 연결을 갱신합니다.</summary>
@@ -351,6 +355,7 @@ namespace EchoZone.Online.Relay
             return options;
         }
 
+        /// <summary>ReplaceActiveSession 작업을 수행합니다.</summary>
         private void ReplaceActiveSession(ISession nextSession)
         {
             if (activeSession != null)
@@ -371,16 +376,19 @@ namespace EchoZone.Online.Relay
             }
         }
 
+        /// <summary>HandleSessionHostChanged 작업을 수행합니다.</summary>
         private void HandleSessionHostChanged(string newHostPlayerId)
         {
             SessionHostChanged?.Invoke(newHostPlayerId);
         }
 
+        /// <summary>HandleSessionMigrated 작업을 수행합니다.</summary>
         private void HandleSessionMigrated()
         {
             SessionMigrated?.Invoke();
         }
 
+        /// <summary>HandleMigrationFailed 작업을 수행합니다.</summary>
         private void HandleMigrationFailed(SessionError error)
         {
             LastErrorMessage = error.ToString();

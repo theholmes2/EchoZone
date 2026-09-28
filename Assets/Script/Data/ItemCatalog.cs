@@ -8,6 +8,7 @@ using UnityEngine;
 [CreateAssetMenu(
     fileName = "ItemCatalog",
     menuName = "EchoZone/Item/Catalog")]
+/// <summary>ItemCatalog 관련 기능과 데이터를 제공하는 형식입니다.</summary>
 public sealed class ItemCatalog : ScriptableObject
 {
     /// <summary>게임에서 사용할 모든 아이템 정의 목록입니다.</summary>

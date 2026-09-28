@@ -16,12 +16,21 @@ MonoBehaviour:
   magazineCapacity: 30
   reloadSeconds: 1.5
   autoReloadDelaySeconds: 2
+  infiniteReserveAmmunition: 0
+  enemyBurstShotCount: 1
+  enemyBurstPauseSeconds: 0.5
   projectileSpeed: 24
   projectileLifetimeSeconds: 3
   damage: 10
-  stationarySpreadDegrees: 1
+  projectileHitRadius: 0.05
+  projectileHitLayers:
+    serializedVersion: 2
+    m_Bits: 819
+  stationarySpreadDegrees: 2
   movingSpreadDegrees: 8
   movingThreshold: 0.01
   aimTurnDegreesPerSecond: 1080
+  weaponPrefab: {fileID: 1694449805434718, guid: f038cb50e45982148accd7cc8681c16b, type: 3}
+  muzzleLocalPosition: {x: 0, y: 0, z: 0.359}
   projectilePrefab: {fileID: 7061919837043997823, guid: 62bb24a2100847f479385eec0cc72990, type: 3}
   ammunitionItem: {fileID: 11400000, guid: 9457555da70572e44bce9aee1aad1e51, type: 2}

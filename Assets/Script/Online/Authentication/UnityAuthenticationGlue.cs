@@ -28,7 +28,7 @@ namespace EchoZone.Online.Authentication
                 return;
             }
 
-            Debug.Log(
+            EchoZone.Online.OnlineDebugLog.Info(
                 $"Unity Authentication succeeded. PlayerId: {authenticationService.PlayerId}",
                 this);
         }

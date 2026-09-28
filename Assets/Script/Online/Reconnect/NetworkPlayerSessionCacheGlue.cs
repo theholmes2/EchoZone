@@ -13,34 +13,55 @@ namespace EchoZone.Online.Reconnect
     /// </summary>
     public sealed class NetworkPlayerSessionCacheGlue : MonoBehaviour
     {
+        /// <summary>CacheEntry 관련 기능과 데이터를 제공하는 형식입니다.</summary>
         private sealed class CacheEntry
         {
+            /// <summary>Snapshot 값을 저장합니다.</summary>
             public PlayerSessionSnapshot Snapshot;
+            /// <summary>ExpiresAt 값을 저장합니다.</summary>
             public float ExpiresAt = float.PositiveInfinity;
+            /// <summary>Ticket 값을 저장합니다.</summary>
             public string Ticket = string.Empty;
+            /// <summary>IsConnected 값을 저장합니다.</summary>
             public bool IsConnected;
         }
 
         [SerializeField] private RelaySessionConfig config;
         [SerializeField] private ItemCatalog itemCatalog;
 
+        /// <summary>cachedStates 값을 저장합니다.</summary>
         private readonly Dictionary<string, CacheEntry> cachedStates = new();
+        /// <summary>playerIdsByClientId 값을 저장합니다.</summary>
         private readonly Dictionary<ulong, string> playerIdsByClientId = new();
+        /// <summary>restoreAuthorizedClientIds 값을 저장합니다.</summary>
         private readonly HashSet<ulong> restoreAuthorizedClientIds = new();
 
+        /// <summary>Instance 값을 제공합니다.</summary>
         public static NetworkPlayerSessionCacheGlue Instance { get; private set; }
 
         /// <summary>Snapshot의 ItemId를 실제 아이템 정의로 복원하는 카탈로그입니다.</summary>
         public ItemCatalog ItemCatalog => itemCatalog;
 
+        /// <summary>서버 연결 승인에서 기록한 계정 ID를 제공합니다. RPC로 받은 계정 문자열을 사용하지 않습니다.</summary>
+        public bool TryGetPlayerId(ulong clientId, out string playerId) => playerIdsByClientId.TryGetValue(clientId, out playerId);
+
+        /// <summary>명시적인 새 방 생성에서만 이전 방의 연결·티켓 캐시를 폐기합니다. 마이그레이션에는 호출하지 않습니다.</summary>
+        public void ResetForNewSession()
+        {
+            cachedStates.Clear(); playerIdsByClientId.Clear(); restoreAuthorizedClientIds.Clear();
+            migrationAuthorizedPlayerIds.Clear();
+        }
+
         /// <summary>새 Host가 이전 Host의 티켓 대신 Session Snapshot으로 승인할 PlayerId입니다.</summary>
         private readonly HashSet<string> migrationAuthorizedPlayerIds = new();
 
+        /// <summary>Awake 작업을 수행합니다.</summary>
         private void Awake()
         {
             Instance = this;
         }
 
+        /// <summary>Start 작업을 수행합니다.</summary>
         private void Start()
         {
             NetworkManager networkManager = NetworkManager.Singleton;
@@ -54,6 +75,7 @@ namespace EchoZone.Online.Reconnect
             networkManager.OnClientDisconnectCallback += HandleClientDisconnected;
         }
 
+        /// <summary>OnDestroy 작업을 수행합니다.</summary>
         private void OnDestroy()
         {
             NetworkManager networkManager = NetworkManager.Singleton;
@@ -74,6 +96,7 @@ namespace EchoZone.Online.Reconnect
             }
         }
 
+        /// <summary>Update 작업을 수행합니다.</summary>
         private void Update()
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
@@ -121,6 +144,7 @@ namespace EchoZone.Online.Reconnect
 
             response.Approved = approved;
             response.CreatePlayerObject = approved;
+            response.Position = Vector3.up * 2f;
             response.Pending = false;
             response.Reason = approved
                 ? string.Empty
@@ -129,7 +153,7 @@ namespace EchoZone.Online.Reconnect
             if (approved)
             {
                 playerIdsByClientId[request.ClientNetworkId] = credential.PlayerId;
-                Debug.Log(
+                EchoZone.Online.OnlineDebugLog.Info(
                     $"Session credential approved. ClientId: {request.ClientNetworkId}, PlayerId: {ShortenPlayerId(credential.PlayerId)}, Reconnect: {!string.IsNullOrEmpty(credential.Ticket)}",
                     this);
             }
@@ -178,7 +202,7 @@ namespace EchoZone.Online.Reconnect
             reporter.Initialize(playerId, snapshot, itemCatalog);
             ticketBridge.AssignTicket(nextTicket);
 
-            Debug.Log(
+            EchoZone.Online.OnlineDebugLog.Info(
                 snapshot != null
                     ? $"Session cache restored. PlayerId: {ShortenPlayerId(playerId)}, Health: {snapshot.Health}, Slots: {snapshot.InventorySlots.Count}"
                     : $"Session cache not found. New state used. PlayerId: {ShortenPlayerId(playerId)}",
@@ -206,7 +230,7 @@ namespace EchoZone.Online.Reconnect
                     : 0f;
                 entry.ExpiresAt = Time.unscaledTime + cacheSeconds;
                 entry.IsConnected = false;
-                Debug.Log(
+                EchoZone.Online.OnlineDebugLog.Info(
                     $"Session cache held for {cacheSeconds} seconds. PlayerId: {ShortenPlayerId(playerId)}, Health: {entry.Snapshot.Health}",
                     this);
             }

@@ -1,6 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
-using EchoZone.Player.View; // CharacterAnimatorView가 있는 네임스페이스
+using EchoZone.Player.View;
 using EchoZone.Environment.View;
 
 namespace EchoZone.Player.Glue
@@ -19,19 +19,17 @@ namespace EchoZone.Player.Glue
         /// <summary>맵(Scene)에 존재하는 순수 로컬 셰이더 연출 컨트롤러입니다.</summary>
         private SeeThroughTunnelController sceneSeeThroughController;
 
+        /// <summary>OnNetworkSpawn 작업을 수행합니다.</summary>
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
-            // 🌟 매우 중요: 내가 조종하는 로컬 오너 캐릭터가 아니라면 이 컴포넌트를 즉시 끕니다.
-            // 이 방어 코드 덕분에 다른 플레이어가 접속해도 내 화면의 셰이더가 오염되지 않습니다.
             if (!IsOwner)
             {
                 enabled = false;
                 return;
             }
 
-            // 자동으로 씬에 배치된 셰이더 컨트롤러를 찾아옵니다. (싱글톤이 있다면 싱글톤 접근도 좋습니다)
             sceneSeeThroughController = Object.FindAnyObjectByType<SeeThroughTunnelController>();
 
             if (characterAnimatorView == null)
@@ -52,14 +50,12 @@ namespace EchoZone.Player.Glue
 
             if (sceneSeeThroughController == null) return;
 
-            // 🧪 [접착] 캐릭터 회전 브릭(CharacterAnimatorView)의 transform(위치+회전값)을 
-            // 맵에 배치된 셰이더 컨트롤러에 매 프레임 동기화합니다.
             sceneSeeThroughController.UpdateShaderVariables(characterAnimatorView.transform);
         }
 
+        /// <summary>OnNetworkDespawn 작업을 수행합니다.</summary>
         public override void OnNetworkDespawn()
         {
-            // 플레이어가 게임에서 나가거나 파괴될 때 셰이더 변수가 남는 것을 방지하기 위한 안전장치
             if (IsOwner)
             {
                 sceneSeeThroughController?.ClearShaderVariables();

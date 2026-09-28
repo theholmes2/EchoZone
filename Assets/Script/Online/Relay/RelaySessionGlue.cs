@@ -30,15 +30,22 @@ namespace EchoZone.Online.Relay
         /// <summary>Relay Host Session 생성 로직을 담당하는 Brick입니다.</summary>
         private readonly UnityRelaySessionService relaySessionService = new();
 
+        /// <summary>snapshotApplier 값을 저장합니다.</summary>
         private readonly HostMigrationSnapshotApplier snapshotApplier = new();
+        /// <summary>migrationDataHandler 값을 저장합니다.</summary>
         private HostMigrationSessionDataHandler migrationDataHandler;
+        /// <summary>explicitReconnectTest 값을 저장합니다.</summary>
         private bool explicitReconnectTest;
+        /// <summary>recoveryGeneration 값을 저장합니다.</summary>
         private int recoveryGeneration;
+        /// <summary>RecoveryStatus 값을 제공합니다.</summary>
         public string RecoveryStatus { get; private set; } = string.Empty;
+        /// <summary>pendingMigrationSnapshot 값을 저장합니다.</summary>
         private HostMigrationSnapshot pendingMigrationSnapshot;
 
         /// <summary>현재 실행이 Relay Session에 참가한 Client인지 나타냅니다.</summary>
         private bool joinedAsClient;
+        /// <summary>useInvalidTicketForTest 값을 저장합니다.</summary>
         private bool useInvalidTicketForTest;
 
         /// <summary>연결 당시 NGO가 이 Client에 발급한 임시 Client ID입니다.</summary>
@@ -108,16 +115,18 @@ namespace EchoZone.Online.Relay
         /// <summary>MPS가 새 Host를 확정하면 모든 참가자의 로딩 상태를 시작합니다.</summary>
         private void HandleSessionHostChanged(string newHostPlayerId)
         {
+            SessionWorldMigrationGlue.Begin();
             recoveryGeneration++;
             IsMigratingHost = true;
             RecoveryStatus = "Host changed. Restoring the session...";
             ClientConnectionState = RelayClientConnectionState.Reconnecting;
-            Debug.Log(
+            EchoZone.Online.OnlineDebugLog.Info(
                 $"Session Host changed. New Host PlayerId: {ShortenPlayerId(newHostPlayerId)}",
                 this);
             _ = WatchMigrationAsync(recoveryGeneration);
         }
 
+        /// <summary>WatchMigrationAsync 작업을 수행합니다.</summary>
         private async Task WatchMigrationAsync(int generation)
         {
             await Task.Delay(Mathf.RoundToInt(config.SessionRecoveryTimeoutSeconds * 1000f));
@@ -125,6 +134,7 @@ namespace EchoZone.Online.Relay
                 HandleMigrationFailed("Migration completion timed out.");
         }
 
+        /// <summary>HandleMigrationFailed 작업을 수행합니다.</summary>
         private void HandleMigrationFailed(string reason)
         {
             recoveryGeneration++;
@@ -143,6 +153,7 @@ namespace EchoZone.Online.Relay
             }
 
             pendingMigrationSnapshot = snapshot;
+            SessionWorldMigrationGlue.Begin();
             migrationSnapshotCollector?.TryRestoreRun(
                 snapshot.RunId,
                 snapshot.SnapshotVersion);
@@ -178,8 +189,20 @@ namespace EchoZone.Online.Relay
                         {
                             snapshot = cloudSnapshot;
                         }
+                        if (!succeeded && snapshot?.World != null)
+                        {
+                            HandleMigrationFailed("Cloud receipt checkpoint could not be verified; refusing stale world recovery.");
+                            return;
+                        }
                     }
 
+                    if (snapshot?.World != null && (cloudCheckpointGlue == null || string.IsNullOrWhiteSpace(runId)))
+                    {
+                        HandleMigrationFailed("Cloud receipt verification is unavailable; refusing stale world recovery.");
+                        return;
+                    }
+                    await SessionWorldMigrationGlue.VerifyConnectedWallets(snapshot, relaySessionService.SessionId);
+                    if (this == null || generation != recoveryGeneration) return;
                     if (snapshot == null || !snapshotApplier.Apply(snapshot))
                     {
                         HandleMigrationFailed("No applicable Snapshot.");
@@ -189,7 +212,7 @@ namespace EchoZone.Online.Relay
                     migrationSnapshotCollector?.TryRestoreRun(
                         snapshot.RunId,
                         snapshot.SnapshotVersion);
-                    Debug.Log(
+                    EchoZone.Online.OnlineDebugLog.Info(
                         $"Host migration Snapshot applied. RunId: {snapshot.RunId}, Version: {snapshot.SnapshotVersion}",
                         this);
                     _ = RunPostMigrationProtectionAsync();
@@ -197,6 +220,7 @@ namespace EchoZone.Online.Relay
 
                 ClientConnectionState = RelayClientConnectionState.Connected;
                 IsMigratingHost = false;
+                SessionWorldMigrationGlue.Complete();
                 recoveryGeneration++;
                 useInvalidTicketForTest = false;
                 joinedAsClient = !relaySessionService.IsHost;
@@ -205,6 +229,7 @@ namespace EchoZone.Online.Relay
             }
             catch (System.Exception exception)
             {
+                if (this == null || generation != recoveryGeneration) return;
                 HandleMigrationFailed(exception.Message);
             }
         }
@@ -238,15 +263,17 @@ namespace EchoZone.Online.Relay
 
             SetServerPlayerDamageBlocked(false);
             IsPostMigrationProtected = false;
-            Debug.Log("Post-migration invulnerability ended.", this);
+            EchoZone.Online.OnlineDebugLog.Info("Post-migration invulnerability ended.", this);
         }
 
+        /// <summary>HandleProtectedClientConnected 작업을 수행합니다.</summary>
         private async void HandleProtectedClientConnected(ulong clientId)
         {
             await Task.Yield();
             SetServerPlayerDamageBlocked(true);
         }
 
+        /// <summary>SetServerPlayerDamageBlocked 작업을 수행합니다.</summary>
         private static void SetServerPlayerDamageBlocked(bool blocked)
         {
             NetworkManager networkManager = NetworkManager.Singleton;
@@ -264,6 +291,7 @@ namespace EchoZone.Online.Relay
             }
         }
 
+        /// <summary>ShortenPlayerId 작업을 수행합니다.</summary>
         private static string ShortenPlayerId(string playerId)
         {
             const int visibleCharacters = 8;
@@ -313,6 +341,7 @@ namespace EchoZone.Online.Relay
                     return false;
                 }
                 ReconnectTicketMemoryStore.Reset();
+                NetworkPlayerSessionCacheGlue.Instance?.ResetForNewSession();
                 ConfigureConnectionIdentity();
 
                 bool created =
@@ -326,13 +355,13 @@ namespace EchoZone.Online.Relay
                     return false;
                 }
 
-                Debug.Log(
+                EchoZone.Online.OnlineDebugLog.Info(
                     $"Relay Host Session created. Join Code: {relaySessionService.JoinCode}",
                     this);
                 if (migrationSnapshotCollector != null)
                 {
                     string runId = migrationSnapshotCollector.StartNewRun();
-                    Debug.Log($"New Run started. RunId: {runId}", this);
+                    EchoZone.Online.OnlineDebugLog.Info($"New Run started. RunId: {runId}", this);
                     if (!await relaySessionService.PublishRunIdAsync(runId))
                     {
                         Debug.LogError(
@@ -409,7 +438,7 @@ namespace EchoZone.Online.Relay
                     return false;
                 }
 
-                Debug.Log(
+                EchoZone.Online.OnlineDebugLog.Info(
                     $"Relay Session joined. Session ID: {relaySessionService.SessionId}",
                     this);
                 joinedAsClient = true;
@@ -467,7 +496,7 @@ namespace EchoZone.Online.Relay
             double deadline = Time.realtimeSinceStartupAsDouble + config.SessionRecoveryTimeoutSeconds;
             double graceDeadline = Time.realtimeSinceStartupAsDouble + config.HostMigrationGraceSeconds;
             RecoveryStatus = "Connection lost. Keeping session membership...";
-            Debug.Log("Session recovery started. Waiting for Unity host election; not leaving Lobby.", this);
+            EchoZone.Online.OnlineDebugLog.Info("Session recovery started. Waiting for Unity host election; not leaving Lobby.", this);
             while (this != null && generation == recoveryGeneration)
             {
                 await Task.Delay(Mathf.RoundToInt(config.SessionRecoveryPollSeconds * 1000f));
@@ -481,7 +510,7 @@ namespace EchoZone.Online.Relay
                     connectedLocalClientId = manager.LocalClientId;
                     ClientConnectionState = RelayClientConnectionState.Connected;
                     RecoveryStatus = string.Empty;
-                    Debug.Log("Session connection recovered without leaving Lobby.", this);
+                    EchoZone.Online.OnlineDebugLog.Info("Session connection recovered without leaving Lobby.", this);
                     return;
                 }
 
@@ -490,7 +519,7 @@ namespace EchoZone.Online.Relay
                         ? "Cloud reachable. Waiting for connection recovery..."
                         : "Grace elapsed. Waiting for Unity host election (Dashboard controlled)...")
                     : "Cloud unavailable. Waiting for connectivity...";
-                Debug.Log($"Session recovery: {RecoveryStatus} {relaySessionService.LastErrorMessage}", this);
+                EchoZone.Online.OnlineDebugLog.Info($"Session recovery: {RecoveryStatus} {relaySessionService.LastErrorMessage}", this);
 
                 // NGO만 재시도한다. Session 핸들과 호스트 변경 구독은 유지한다.
                 // 기존 Relay allocation이 만료됐으면 이 시도는 실패하고 선출 대기를 계속한다.
@@ -555,7 +584,7 @@ namespace EchoZone.Online.Relay
                     useInvalidTicketForTest = false;
                     connectedLocalClientId = NetworkManager.Singleton.LocalClientId;
                     ClientConnectionState = RelayClientConnectionState.Connected;
-                    Debug.Log(
+                    EchoZone.Online.OnlineDebugLog.Info(
                         $"Relay Session reconnected on attempt {attempt}. Session ID: {relaySessionService.SessionId}",
                         this);
                     return;
@@ -644,9 +673,13 @@ namespace EchoZone.Online.Relay
                 credential.Serialize());
         }
 
+        /// <summary>클라우드 정산 성공 후 명시적으로 퇴장하며 자동 재접속 플래그도 정리합니다.</summary>
+        public Task<bool> LeaveAfterEscapeAsync() => PrepareManualConnectionAsync();
+
         /// <summary>수동 참가/생성 전에 이전 Session과 NGO 연결을 순서대로 정리합니다.</summary>
         private async Task<bool> PrepareManualConnectionAsync()
         {
+            SessionWorldMigrationGlue.Reset();
             recoveryGeneration++;
             explicitReconnectTest = false;
             IsMigratingHost = false;

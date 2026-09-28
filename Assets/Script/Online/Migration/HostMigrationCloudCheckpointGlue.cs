@@ -13,12 +13,15 @@ namespace EchoZone.Online.Migration
         [SerializeField] private HostMigrationCloudConfig config;
         [SerializeField] private RelaySessionGlue relaySessionGlue;
 
+        /// <summary>serializer 값을 저장합니다.</summary>
         private readonly HostMigrationSnapshotJsonSerializer serializer = new();
+        /// <summary>cloudService 값을 저장합니다.</summary>
         private readonly HostMigrationCloudCheckpointService cloudService = new();
 
         /// <summary>Cloud 저장 작업이 실행 중인지 나타냅니다.</summary>
         public bool IsSaving { get; private set; }
 
+        /// <summary>automaticSavingEnabled 값을 저장합니다.</summary>
         private bool automaticSavingEnabled;
 
         /// <summary>Session 참가 이후 설정 간격으로 현재 Host만 Cloud 체크포인트를 저장합니다.</summary>
@@ -33,11 +36,13 @@ namespace EchoZone.Online.Migration
             _ = RunAutomaticSavingAsync(Mathf.Max(1f, intervalSeconds));
         }
 
+        /// <summary>OnDestroy 작업을 수행합니다.</summary>
         private void OnDestroy()
         {
             automaticSavingEnabled = false;
         }
 
+        /// <summary>RunAutomaticSavingAsync 작업을 수행합니다.</summary>
         private async Task RunAutomaticSavingAsync(float intervalSeconds)
         {
             int delayMilliseconds = Mathf.RoundToInt(intervalSeconds * 1000f);
@@ -83,6 +88,12 @@ namespace EchoZone.Online.Migration
             }
 
             string snapshotJson = serializer.Serialize(snapshot);
+            int snapshotBytes = System.Text.Encoding.UTF8.GetByteCount(snapshotJson);
+            if (snapshotBytes > config.MaximumSnapshotBytes)
+            {
+                Debug.LogError($"Checkpoint exceeds configured size limit: {snapshotBytes}/{config.MaximumSnapshotBytes} bytes.", this);
+                return false;
+            }
             IsSaving = true;
             try
             {
@@ -100,7 +111,7 @@ namespace EchoZone.Online.Migration
                     return false;
                 }
 
-                Debug.Log(
+                EchoZone.Online.OnlineDebugLog.Info(
                     $"Cloud checkpoint saved. RunId: {snapshot.RunId}, Version: {snapshot.SnapshotVersion}",
                     this);
                 return true;
@@ -180,7 +191,7 @@ namespace EchoZone.Online.Migration
                 return;
             }
 
-            Debug.Log(
+            EchoZone.Online.OnlineDebugLog.Info(
                 $"Cloud authorization test passed: Client save was rejected. {cloudService.LastErrorMessage}",
                 this);
         }

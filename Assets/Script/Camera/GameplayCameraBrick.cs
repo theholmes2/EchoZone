@@ -26,9 +26,13 @@ namespace EchoZone.CameraSystem
         /// <summary>초기 Pose 계산이 끝났는지 나타냅니다.</summary>
         private bool initialized = false;
 
+        /// <summary>현재 부드럽게 보간된 카메라 위치입니다.</summary>
         public Vector3 CurrentPosition => currentPosition;
+        /// <summary>현재 카메라 회전입니다.</summary>
         public Quaternion CurrentRotation => currentRotation;
+        /// <summary>현재 목표 지점과 카메라 사이의 거리입니다.</summary>
         public float CurrentDistance => currentDistance;
+        /// <summary>초기 Pose 계산이 끝났는지 나타냅니다.</summary>
         public bool IsInitialized => initialized;
 
         /// <summary>Brick이 사용할 설정 데이터를 연결합니다.</summary>

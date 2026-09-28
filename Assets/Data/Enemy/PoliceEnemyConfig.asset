@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 500840f9ca9a444eb27642bf3fbe92d2, type: 3}
+  m_Name: PoliceEnemyConfig
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Enemy.PoliceEnemyConfig
+  policePrefab: {fileID: 7649781563020928400, guid: 13d722a4cc1b2894ea6eca52e7020d7c, type: 3}
+  visualHeight: 2.25
+  collisionHeight: 2
+  collisionRadius: 0.5
+  patrolMoveSpeed: 2.5
+  patrolPointArrivalDistance: 0.35
+  patrolWaitSeconds: 1
+  sightAngle: 100
+  sightDistance: 14
+  sightOriginHeight: 1.2
+  detectionGainPerSecond: 0.8
+  detectionLossPerSecond: 0.45
+  detectionThreshold: 1
+  targetLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  sightBlockingLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  chaseMoveSpeed: 4.5
+  lastKnownPositionArrivalDistance: 0.75
+  searchDurationSeconds: 5
+  minimumAttackDistance: 5
+  preferredAttackDistance: 8
+  maximumAttackDistance: 11
+  combatOrbitSpeed: 2.5
+  combatOrbitSwitchSeconds: 2
+  fireIntervalSeconds: 0.35

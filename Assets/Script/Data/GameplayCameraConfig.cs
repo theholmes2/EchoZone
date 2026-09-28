@@ -9,6 +9,7 @@ namespace EchoZone.CameraSystem
     [CreateAssetMenu(
         fileName = "GameplayCameraConfig",
         menuName = "EchoZone/Camera/Gameplay Camera Config")]
+    /// <summary>GameplayCameraConfig 관련 기능과 데이터를 제공하는 형식입니다.</summary>
     public sealed class GameplayCameraConfig : ScriptableObject
     {
         /// <summary>플레이어 위치에서 카메라가 바라볼 지점까지의 높이 보정값입니다.</summary>
@@ -45,15 +46,25 @@ namespace EchoZone.CameraSystem
         [SerializeField, Range(1f, 179f)] private float fieldOfView = 45f;
 
         public Vector3 TargetOffset => targetOffset;
+        /// <summary>덕코프식 대각 구도를 만드는 수평 회전각입니다.</summary>
         public float YawDegrees => yawDegrees;
+        /// <summary>지면을 내려다보는 카메라의 수직 회전각입니다.</summary>
         public float PitchDegrees => pitchDegrees;
+        /// <summary>플레이 시작 시 목표 지점과 카메라 사이의 거리입니다.</summary>
         public float InitialDistance => initialDistance;
+        /// <summary>마우스 휠로 가장 가까이 당길 수 있는 거리입니다.</summary>
         public float MinimumDistance => minimumDistance;
+        /// <summary>마우스 휠로 가장 멀리 밀 수 있는 거리입니다.</summary>
         public float MaximumDistance => maximumDistance;
+        /// <summary>마우스 휠 입력 한 단위가 변경하는 카메라 거리입니다.</summary>
         public float ZoomSensitivity => zoomSensitivity;
+        /// <summary>Input System의 원시 마우스 휠 값을 한 단계 단위로 정규화하는 배율입니다.</summary>
         public float WheelInputScale => wheelInputScale;
+        /// <summary>로컬 카메라 줌 Input Action이 읽을 입력 시스템 바인딩 경로입니다.</summary>
         public string ZoomBindingPath => zoomBindingPath;
+        /// <summary>플레이어를 따라갈 때 위치가 목표값에 수렴하는 속도입니다.</summary>
         public float FollowSharpness => followSharpness;
+        /// <summary>원근 카메라의 시야각입니다.</summary>
         public float FieldOfView => fieldOfView;
     }
 }

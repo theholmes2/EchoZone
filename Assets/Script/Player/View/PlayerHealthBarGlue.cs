@@ -10,8 +10,11 @@ namespace EchoZone.Player.View
     {
         [SerializeField] private HealthBarView healthBarPrefab;
 
-        /// <summary>플레이어 초기화가 끝난 뒤 체력바를 자식으로 생성하고 상태를 연결합니다.</summary>
-        private void Start()
+        /// <summary>풀 재활성화 때 중복 생성하지 않고 재사용할 체력바입니다.</summary>
+        private HealthBarView healthBarView;
+
+        /// <summary>체력바는 최초 한 번만 생성하고 재활성화 때 현재 체력을 다시 연결합니다.</summary>
+        private void OnEnable()
         {
             if (healthBarPrefab == null)
             {
@@ -20,7 +23,7 @@ namespace EchoZone.Player.View
             }
 
             PlayerStats playerStats = GetComponent<PlayerStats>();
-            HealthBarView healthBarView = Instantiate(
+            if (healthBarView == null) healthBarView = Instantiate(
                 healthBarPrefab,
                 transform,
                 false);
@@ -28,4 +31,5 @@ namespace EchoZone.Player.View
             healthBarView.Initialize(playerStats);
         }
     }
+
 }

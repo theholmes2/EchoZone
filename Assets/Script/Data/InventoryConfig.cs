@@ -6,6 +6,7 @@ using UnityEngine;
 [CreateAssetMenu(
     fileName = "InventoryConfig",
     menuName = "EchoZone/Inventory/Config")]
+/// <summary>InventoryConfig 관련 기능과 데이터를 제공하는 형식입니다.</summary>
 public sealed class InventoryConfig : ScriptableObject
 {
     /// <summary>인벤토리가 보유할 수 있는 최대 슬롯 수입니다.</summary>

@@ -1,0 +1,34 @@
+using EchoZone.Online.Migration;
+using UnityEngine;
+
+namespace EchoZone.Pet
+{
+    public sealed partial class PetStateGlue
+    {
+        /// <summary>진행 중인 절도는 문 앞으로 취소하고 완료된 펫 상태만 저장합니다.</summary>
+        public ActorRecord CaptureMigration()
+        {
+            var site = heist != null && heist.IsBusy ? EchoZone.Heist.HeistWorldGlue.Instance?.Site(heist.BuildingId) : null;
+            return new ActorRecord { id = PetId, owner = ownerPlayerId, position = site != null ? site.Entrance : transform.position,
+                rotation = transform.rotation, health = stats.CurrentHealth, state = (int)State, escapeCenter = escapeCenter,
+                recovery = recovery, watchThreats = watchThreats, cargo = heist != null ? heist.Cargo : 0, grade = heist != null ? heist.Grade : 1 };
+        }
+
+        /// <summary>고정 ID와 소유 계정을 복원하고 도주 경로는 새 경찰 배치로 다시 계산합니다.</summary>
+        public void RestoreMigration(ActorRecord record)
+        {
+            if (!IsServer || record == null) return;
+            PetId = record.id;
+            heist?.RestoreMigrationCargo(record.cargo, record.grade);
+            stats.SetCurrentValues(record.health, stats.CurrentStamina, stats.CurrentMana);
+            ownerPlayerId = record.owner; owner.Value = default;
+            state.Value = (PetBehaviourState)record.state;
+            awaitingOwner = State == PetBehaviourState.Following && !string.IsNullOrEmpty(ownerPlayerId);
+            escapeCenter = record.escapeCenter; recovery = record.recovery; watchThreats = record.watchThreats;
+            hasEscapeDestination = false; nextCheck = 0;
+            stats.SetDamageBlocked(State == PetBehaviourState.Fleeing);
+            follow.StopServer(); follow.ResetFollowTarget();
+            SessionWorldMigrationGlue.Place(NetworkObject, record.position, record.rotation);
+        }
+    }
+}

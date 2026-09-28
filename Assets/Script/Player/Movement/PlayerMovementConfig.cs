@@ -8,6 +8,7 @@ namespace EchoZone.Player.Movement
     [CreateAssetMenu(
         fileName = "PlayerMovementConfig",
         menuName = "EchoZone/Player/Movement Config")]
+    /// <summary>PlayerMovementConfig 관련 기능과 데이터를 제공하는 형식입니다.</summary>
     public sealed class PlayerMovementConfig : ScriptableObject
     {
         /// <summary>플레이어의 초당 이동 거리입니다.</summary>

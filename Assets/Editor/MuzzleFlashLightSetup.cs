@@ -13,7 +13,11 @@ public static class MuzzleFlashLightSetup
     [InitializeOnLoadMethod]
     private static void QueueSetup()
     {
-        EditorApplication.delayCall += Apply;
+        // 이미 구성한 프리팹의 수동 위치와 계층은 컴파일 시 덮어쓰지 않습니다.
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(EffectPrefabPath) == null)
+        {
+            EditorApplication.delayCall += Apply;
+        }
     }
 
     [MenuItem("EchoZone/Combat/Build Muzzle Flash Light")]

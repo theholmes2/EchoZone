@@ -20,10 +20,13 @@ namespace EchoZone.Online.Migration
 
             NetworkPlayerSessionCacheGlue cache =
                 NetworkPlayerSessionCacheGlue.Instance;
+            if (SessionWorldMigrationGlue.AlreadyApplied(snapshot)) return true;
+            if (snapshot.World != null) SessionWorldSnapshotValidator.Validate(snapshot.World);
             cache?.PrepareHostMigration(snapshot.Players);
 
             ApplyToConnectedPlayers(snapshot.Players);
             ApplyWorldItems(snapshot.WorldItems);
+            SessionWorldMigrationGlue.Restore(snapshot);
             return true;
         }
 

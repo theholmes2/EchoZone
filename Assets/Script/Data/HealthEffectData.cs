@@ -18,6 +18,7 @@ public enum HealthEffectType
 [CreateAssetMenu(
     fileName = "HealthEffectData",
     menuName = "EchoZone/Player/Health Effect")]
+/// <summary>HealthEffectData 관련 기능과 데이터를 제공하는 형식입니다.</summary>
 public sealed class HealthEffectData : ScriptableObject
 {
     [SerializeField] private HealthEffectType effectType;

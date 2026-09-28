@@ -10,10 +10,14 @@ namespace EchoZone.Online.Migration
     /// </summary>
     public sealed class HostMigrationSessionDataHandler : IMigrationDataHandler
     {
+        /// <summary>collector 값을 저장합니다.</summary>
         private readonly HostMigrationSnapshotCollector collector;
+        /// <summary>serializer 값을 저장합니다.</summary>
         private readonly HostMigrationSnapshotJsonSerializer serializer;
+        /// <summary>snapshotReceived 값을 저장합니다.</summary>
         private readonly Action<HostMigrationSnapshot> snapshotReceived;
 
+        /// <summary>HostMigrationSessionDataHandler 작업을 수행합니다.</summary>
         public HostMigrationSessionDataHandler(
             HostMigrationSnapshotCollector collector,
             Action<HostMigrationSnapshot> snapshotReceived)

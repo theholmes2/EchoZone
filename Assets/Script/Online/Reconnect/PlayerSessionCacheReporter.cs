@@ -12,19 +12,24 @@ namespace EchoZone.Online.Reconnect
     [RequireComponent(typeof(PlayerStats))]
     public sealed class PlayerSessionCacheReporter : NetworkBehaviour
     {
+        /// <summary>inventory 값을 저장합니다.</summary>
         private PlayerInventory inventory;
+        /// <summary>playerStats 값을 저장합니다.</summary>
         private PlayerStats playerStats;
+        /// <summary>playerId 값을 저장합니다.</summary>
         private string playerId = string.Empty;
 
         /// <summary>Collector가 세션이 바뀐 뒤에도 플레이어를 식별할 인증 PlayerId입니다.</summary>
         public string PlayerId => playerId;
 
+        /// <summary>Awake 작업을 수행합니다.</summary>
         private void Awake()
         {
             inventory = GetComponent<PlayerInventory>();
             playerStats = GetComponent<PlayerStats>();
         }
 
+        /// <summary>OnEnable 작업을 수행합니다.</summary>
         private void OnEnable()
         {
             inventory?.AddInventoryChangedListener(PublishSnapshot);
@@ -33,6 +38,7 @@ namespace EchoZone.Online.Reconnect
             playerStats?.AddManaChangedListener(HandleStatChanged);
         }
 
+        /// <summary>OnDisable 작업을 수행합니다.</summary>
         private void OnDisable()
         {
             inventory?.RemoveInventoryChangedListener(PublishSnapshot);
@@ -41,6 +47,7 @@ namespace EchoZone.Online.Reconnect
             playerStats?.RemoveManaChangedListener(HandleStatChanged);
         }
 
+        /// <summary>OnNetworkDespawn 작업을 수행합니다.</summary>
         public override void OnNetworkDespawn()
         {
             PublishSnapshot();

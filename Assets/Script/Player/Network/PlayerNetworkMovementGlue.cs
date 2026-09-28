@@ -46,6 +46,30 @@ namespace EchoZone.Player.Network
 
         /// <summary>서버가 마지막으로 승인하여 시뮬레이션에 사용하는 이동 입력입니다.</summary>
         private Vector2 serverMoveInput;
+        /// <summary>체력 이벤트가 설정하는 이동·조준 차단 상태입니다.</summary>
+        private bool deathBlocked;
+        /// <summary>기존 갱신 순서에 연결한 탈출 정산 Glue입니다.</summary>
+        private EchoZone.Heist.PlayerWalletGlue wallet;
+        /// <summary>사망 또는 서버 탈출 승인 이후에는 입력과 이동을 실행하지 않습니다.</summary>
+        private bool ActionBlocked => deathBlocked || (wallet != null && wallet.IsEscaping) || EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring;
+        /// <summary>기존 Update에서 부활 예약을 갱신할 사망 Glue입니다.</summary>
+        private PlayerDeathGlue deathGlue;
+        /// <summary>기존 갱신 순서에서 소속 펫의 추종과 표시를 갱신합니다.</summary>
+
+        /// <summary>사망 시 잔여 입력과 수평 속도를 제거하되 카메라 갱신은 유지합니다.</summary>
+        public void SetDeathBlocked(bool blocked)
+        {
+            if (deathBlocked == blocked) return;
+            deathBlocked = blocked;
+            serverMoveInput = Vector2.zero;
+            lastSubmittedInput = Vector2.zero;
+            if (blocked && IsServer && TryGetComponent<Rigidbody>(out var body) && !body.isKinematic)
+            {
+                body.linearVelocity = new Vector3(0f, body.linearVelocity.y, 0f);
+                body.angularVelocity = Vector3.zero;
+            }
+            if (IsSpawned) RefreshInputAuthority();
+        }
 
         /// <summary>소유 클라이언트가 서버에 마지막으로 제출한 이동 입력입니다.</summary>
         private Vector2 lastSubmittedInput;
@@ -68,6 +92,8 @@ namespace EchoZone.Player.Network
         /// <summary>네트워크에 생성되면 현재 소유권에 맞춰 로컬 입력 활성화를 갱신합니다.</summary>
         public override void OnNetworkSpawn()
         {
+            wallet = GetComponent<EchoZone.Heist.PlayerWalletGlue>();
+            deathGlue = GetComponent<PlayerDeathGlue>();
             previousPresentationPosition = transform.position;
             RefreshInputAuthority();
         }
@@ -94,6 +120,7 @@ namespace EchoZone.Player.Network
             }
 
             gameplayCameraGlue?.UnbindFollowTarget(transform);
+            characterView?.ResetFireAnimation();
             serverMoveInput = Vector2.zero;
         }
 
@@ -107,12 +134,12 @@ namespace EchoZone.Player.Network
                 return;
             }
 
-            if (IsOwner)
+            if (IsOwner && !ActionBlocked)
             {
                 SubmitInputWhenChanged();
             }
 
-            if (IsServer)
+            if (IsServer && !ActionBlocked)
             {
                 movementMotor?.SimulateMovement(serverMoveInput, Time.fixedDeltaTime);
             }
@@ -128,7 +155,8 @@ namespace EchoZone.Player.Network
                 return;
             }
 
-            if (IsOwner && aimInputGlue != null)
+            wallet?.ManualUpdate();
+            if (IsOwner && !ActionBlocked && aimInputGlue != null)
             {
                 aimInputGlue.ManualUpdate(Time.deltaTime);
                 SubmitAimWhenChanged();
@@ -138,12 +166,14 @@ namespace EchoZone.Player.Network
             {
                 weaponFireGlue.ManualUpdate((float)NetworkManager.ServerTime.TimeAsFloat);
             }
+            if (IsServer) deathGlue?.ManualUpdate(NetworkManager.ServerTime.Time);
 
             Vector3 presentationDirection = IsOwner && aimInputGlue != null && aimInputGlue.HasAimPoint
                 ? aimInputGlue.CurrentAimDirection
                 : networkAimDirection.Value;
             aimPresentationGlue?.SetAimDirection(presentationDirection);
             aimPresentationGlue?.ManualUpdate(Time.deltaTime);
+            characterView?.ManualUpdate(Time.deltaTime);
             seeThroughViewGlue?.ManualUpdate();
         }
 
@@ -152,7 +182,7 @@ namespace EchoZone.Player.Network
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         private void SubmitMovementInputRpc(Vector2 input)
         {
-            if (!IsFinite(input))
+            if (ActionBlocked || !IsFinite(input))
             {
                 serverMoveInput = Vector2.zero;
                 return;
@@ -165,7 +195,7 @@ namespace EchoZone.Player.Network
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         private void SubmitAimDirectionRpc(Vector3 direction)
         {
-            if (!IsFinite(direction))
+            if (ActionBlocked || !IsFinite(direction))
             {
                 return;
             }
@@ -191,10 +221,10 @@ namespace EchoZone.Player.Network
         /// <summary>현재 네트워크 소유권에 따라 입력 리더의 활성 상태를 갱신합니다.</summary>
         private void RefreshInputAuthority()
         {
-            inputReader?.SetInputEnabled(IsOwner);
+            inputReader?.SetInputEnabled(IsOwner && !deathBlocked);
             if (aimInputGlue != null)
             {
-                aimInputGlue.enabled = IsOwner;
+                aimInputGlue.enabled = IsOwner && !deathBlocked;
             }
 
             if (IsOwner)

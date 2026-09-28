@@ -46,6 +46,7 @@ namespace EchoZone.Combat.Glue
         /// <summary>현재 마우스 Ray가 유효한 조준 표면을 가리키는지 나타냅니다.</summary>
         public bool HasAimPoint => hasAimPoint;
 
+        /// <summary>OnEnable 작업을 수행합니다.</summary>
         private void OnEnable()
         {
             pointAction = new InputAction("AimPoint", InputActionType.Value, "<Mouse>/position");
@@ -67,6 +68,7 @@ namespace EchoZone.Combat.Glue
             }
         }
 
+        /// <summary>OnDisable 작업을 수행합니다.</summary>
         private void OnDisable()
         {
             pointAction?.Disable();
@@ -111,7 +113,8 @@ namespace EchoZone.Combat.Glue
                 aimDirectionBrick.TryCalculateDirection(aimOrigin.position, currentAimPoint, out _);
             }
 
-            if (hasAimPoint && fireAction.IsPressed())
+            bool overUi = UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+            if (hasAimPoint && fireAction.IsPressed() && !overUi)
             {
                 networkWeaponFireGlue?.RequestFire(aimDirectionBrick.CurrentAimDirection);
             }

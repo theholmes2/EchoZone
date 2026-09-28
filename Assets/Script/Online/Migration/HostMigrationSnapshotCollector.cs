@@ -9,6 +9,7 @@ namespace EchoZone.Online.Migration
     /// <summary>서버 원본 PlayerObject와 월드 아이템을 읽어 하나의 Host Migration 복사본으로 묶습니다.</summary>
     public sealed class HostMigrationSnapshotCollector : MonoBehaviour
     {
+        /// <summary>runSessionState 값을 저장합니다.</summary>
         private readonly RunSessionState runSessionState = new();
 
         /// <summary>현재 Collector가 수집하는 Run의 고유 식별자입니다.</summary>
@@ -22,6 +23,7 @@ namespace EchoZone.Online.Migration
         /// <returns>새로 생성한 RunId입니다.</returns>
         public string StartNewRun()
         {
+            SessionWorldMigrationGlue.Reset();
             return runSessionState.StartNewRun();
         }
 
@@ -43,12 +45,13 @@ namespace EchoZone.Online.Migration
             NetworkManager networkManager = NetworkManager.Singleton;
             if (networkManager == null ||
                 !networkManager.IsServer ||
-                !runSessionState.HasActiveRun)
+                !runSessionState.HasActiveRun || SessionWorldMigrationGlue.IsRestoring)
             {
                 return false;
             }
 
             List<HostMigrationPlayerSnapshot> players = CollectPlayers();
+            SessionWorldMigrationGlue.IncludePendingPlayers(players);
             List<WorldItemMigrationSnapshot> worldItems = CollectWorldItems();
             long snapshotVersion =
                 runSessionState.IssueNextSnapshotVersion();
@@ -56,7 +59,8 @@ namespace EchoZone.Online.Migration
                 runSessionState.RunId,
                 snapshotVersion,
                 players,
-                worldItems);
+                worldItems,
+                SessionWorldMigrationGlue.Capture(runSessionState.RunId));
             return true;
         }
 

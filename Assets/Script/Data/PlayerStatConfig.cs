@@ -6,6 +6,7 @@ using UnityEngine;
 [CreateAssetMenu(
     fileName = "PlayerStatConfig",
     menuName = "EchoZone/Player/Stat Config")]
+/// <summary>PlayerStatConfig 관련 기능과 데이터를 제공하는 형식입니다.</summary>
 public sealed class PlayerStatConfig : ScriptableObject
 {
     [Header("Maximum Values")]

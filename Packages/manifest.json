@@ -10,6 +10,8 @@
     "com.unity.multiplayer.center": "1.0.1",
     "com.unity.multiplayer.playmode": "1.3.3",
     "com.unity.netcode.gameobjects": "2.7.0",
+    "com.unity.pipeline": "0.6.0-exp.1",
+    "com.unity.postprocessing": "3.5.4",
     "com.unity.render-pipelines.universal": "17.3.0",
     "com.unity.services.authentication": "3.7.4",
     "com.unity.services.cloudcode": "2.10.2",

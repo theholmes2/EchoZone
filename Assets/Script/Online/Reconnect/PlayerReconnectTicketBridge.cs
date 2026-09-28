@@ -8,6 +8,7 @@ namespace EchoZone.Online.Reconnect
     [RequireComponent(typeof(NetworkObject))]
     public sealed class PlayerReconnectTicketBridge : NetworkBehaviour
     {
+        /// <summary>networkTicket 값을 저장합니다.</summary>
         private readonly NetworkVariable<FixedString128Bytes> networkTicket = new(
             default,
             NetworkVariableReadPermission.Owner,

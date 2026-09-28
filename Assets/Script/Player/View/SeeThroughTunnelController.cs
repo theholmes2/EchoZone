@@ -15,29 +15,49 @@ namespace EchoZone.Environment.View
         [SerializeField] private SeeThroughTunnelConfig config;
 
         private static readonly int MinAlphaID = Shader.PropertyToID("_MinAlpha");
+        /// <summary>CameraPositionID 값을 저장합니다.</summary>
         private static readonly int CameraPositionID = Shader.PropertyToID("_SeeThroughCameraPosition");
+        /// <summary>PlayerPositionID 값을 저장합니다.</summary>
         private static readonly int PlayerPositionID = Shader.PropertyToID("_SeeThroughPlayerPosition");
+        /// <summary>PlayerDepthBiasID 값을 저장합니다.</summary>
         private static readonly int PlayerDepthBiasID = Shader.PropertyToID("_SeeThroughPlayerDepthBias");
+        /// <summary>PlayerViewportPositionID 값을 저장합니다.</summary>
         private static readonly int PlayerViewportPositionID = Shader.PropertyToID("_SeeThroughPlayerViewportPosition");
+        /// <summary>PlayerScreenRadiusID 값을 저장합니다.</summary>
         private static readonly int PlayerScreenRadiusID = Shader.PropertyToID("_SeeThroughPlayerScreenRadius");
+        /// <summary>PlayerEdgeSoftnessID 값을 저장합니다.</summary>
         private static readonly int PlayerEdgeSoftnessID = Shader.PropertyToID("_SeeThroughPlayerEdgeSoftness");
+        /// <summary>PlayerForwardID 값을 저장합니다.</summary>
         private static readonly int PlayerForwardID = Shader.PropertyToID("_SeeThroughPlayerForward");
+        /// <summary>PlayerRightID 값을 저장합니다.</summary>
         private static readonly int PlayerRightID = Shader.PropertyToID("_SeeThroughPlayerRight");
+        /// <summary>FieldOfViewAngleID 값을 저장합니다.</summary>
         private static readonly int FieldOfViewAngleID = Shader.PropertyToID("_SeeThroughFieldOfViewAngle");
+        /// <summary>FieldOfViewSoftnessID 값을 저장합니다.</summary>
         private static readonly int FieldOfViewSoftnessID = Shader.PropertyToID("_SeeThroughFieldOfViewSoftness");
+        /// <summary>LosDistancesID 값을 저장합니다.</summary>
         private static readonly int LosDistancesID = Shader.PropertyToID("_SeeThroughLosDistances");
+        /// <summary>LosRayCountID 값을 저장합니다.</summary>
         private static readonly int LosRayCountID = Shader.PropertyToID("_SeeThroughLosRayCount");
+        /// <summary>WholeFadeID 값을 저장합니다.</summary>
         private static readonly int WholeFadeID = Shader.PropertyToID("_SeeThroughWholeFade");
 
         /// <summary>현재 로컬 플레이어를 렌더링하는 플레이 카메라 캐시입니다.</summary>
         private Camera gameplayCamera;
+        /// <summary>occluderHits 값을 저장합니다.</summary>
         private RaycastHit[] occluderHits;
+        /// <summary>visibilityBrick 값을 저장합니다.</summary>
         private readonly SeeThroughVisibilityBrick visibilityBrick = new();
+        /// <summary>losDistances 값을 저장합니다.</summary>
         private float[] losDistances;
+        /// <summary>measuredLosDistances 값을 저장합니다.</summary>
         private float[] measuredLosDistances;
+        /// <summary>propertyBlock 값을 저장합니다.</summary>
         private MaterialPropertyBlock propertyBlock;
+        /// <summary>wholeFadeRenderer 값을 저장합니다.</summary>
         private Renderer wholeFadeRenderer;
 
+        /// <summary>Awake 작업을 수행합니다.</summary>
         private void Awake()
         {
             propertyBlock = new MaterialPropertyBlock();
@@ -122,6 +142,7 @@ namespace EchoZone.Environment.View
             }
         }
 
+        /// <summary>FindFirstBuildingDistance 작업을 수행합니다.</summary>
         private float FindFirstBuildingDistance(Vector3 origin, Vector3 direction, float maximumDistance)
         {
             int hitCount = Physics.RaycastNonAlloc(
@@ -147,6 +168,7 @@ namespace EchoZone.Environment.View
             return Mathf.Max(0f, nearestDistance - config.PlayerDepthBias);
         }
 
+        /// <summary>UsesSeeThroughShader 작업을 수행합니다.</summary>
         private static bool UsesSeeThroughShader(Renderer renderer)
         {
             if (renderer == null) return false;
@@ -201,6 +223,7 @@ namespace EchoZone.Environment.View
             SetWholeBuildingOccluder(candidate);
         }
 
+        /// <summary>SetWholeBuildingOccluder 작업을 수행합니다.</summary>
         private void SetWholeBuildingOccluder(Renderer candidate)
         {
             if (wholeFadeRenderer == candidate) return;
@@ -212,6 +235,7 @@ namespace EchoZone.Environment.View
             SetWholeFade(wholeFadeRenderer, 1f);
         }
 
+        /// <summary>FindBuildingBetween 작업을 수행합니다.</summary>
         private Renderer FindBuildingBetween(Vector3 playerSample, Vector3 cameraPosition)
         {
             Vector3 sampleToCamera = cameraPosition - playerSample;
@@ -245,6 +269,7 @@ namespace EchoZone.Environment.View
             return nearestRenderer;
         }
 
+        /// <summary>SetWholeFade 작업을 수행합니다.</summary>
         private void SetWholeFade(Renderer targetRenderer, float value)
         {
             if (targetRenderer == null) return;
@@ -255,6 +280,7 @@ namespace EchoZone.Environment.View
             propertyBlock.Clear();
         }
 
+        /// <summary>ClearWholeBuildingOccluder 작업을 수행합니다.</summary>
         private void ClearWholeBuildingOccluder()
         {
             if (wholeFadeRenderer == null) return;
@@ -267,6 +293,7 @@ namespace EchoZone.Environment.View
             wholeFadeRenderer = null;
         }
 
+        /// <summary>EnsureLosBuffer 작업을 수행합니다.</summary>
         private void EnsureLosBuffer()
         {
             const int shaderCapacity = 64;
@@ -281,6 +308,7 @@ namespace EchoZone.Environment.View
             }
         }
 
+        /// <summary>EnsureHitBuffer 작업을 수행합니다.</summary>
         private void EnsureHitBuffer()
         {
             int capacity = config.MaximumOccluderHits;

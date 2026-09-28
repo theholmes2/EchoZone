@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.View.CharacterAnimationConfig
   movementThreshold: 0.001
   turnDegreesPerSecond: 720
+  aimHoldSeconds: 0.4

@@ -5,6 +5,7 @@ namespace EchoZone.Online.Reconnect
     /// <summary>NGO 연결 승인에 전달할 PlayerId와 일회용 재접속 티켓입니다.</summary>
     public readonly struct ReconnectCredential
     {
+        /// <summary>Separator 값을 저장합니다.</summary>
         private const char Separator = '\n';
 
         /// <summary>연결 승인 자격 정보를 생성합니다.</summary>
@@ -59,7 +60,9 @@ namespace EchoZone.Online.Reconnect
     /// <summary>현재 실행 중인 Client가 받은 최신 재접속 티켓을 메모리에만 보관합니다.</summary>
     public static class ReconnectTicketMemoryStore
     {
+        /// <summary>sessionCode 값을 저장합니다.</summary>
         private static string sessionCode = string.Empty;
+        /// <summary>expiresAt 값을 저장합니다.</summary>
         private static double expiresAt = double.PositiveInfinity;
         /// <summary>다음 재접속 요청에 사용할 최신 티켓입니다.</summary>
         public static string Ticket { get; private set; } = string.Empty;
@@ -92,6 +95,7 @@ namespace EchoZone.Online.Reconnect
             }
         }
 
+        /// <summary>GetTicket 작업을 수행합니다.</summary>
         public static string GetTicket(double now)
         {
             if (now >= expiresAt)

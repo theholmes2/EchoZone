@@ -1,5 +1,6 @@
-using Combat.View; // MuzzleFlashEffect가 위치한 네임스페이스
+using Combat.View;
 using EchoZone.Combat.Glue;
+using EchoZone.Player.View;
 using UnityEngine;
 
 namespace Combat.Glue
@@ -16,27 +17,33 @@ namespace Combat.Glue
         [Header("Visual Effect Bricks")]
         /// <summary>Client별 로컬 총구 불빛과 파티클을 재생할 연출 컴포넌트입니다.</summary>
         [SerializeField] private MuzzleFlashEffectBrick muzzleFlashEffectBrick;
-        // 💡 나중에 사운드, 카메라 흔들림 브릭이 추가되면 여기에 변수를 늘려주면 됩니다.
+        /// <summary>승인된 발사에만 오른팔 반동을 재생하는 캐릭터 View입니다.</summary>
+        [SerializeField] private CharacterAnimatorView characterView;
 
         /// <summary>발사 알림 이벤트와 로컬 총구 연출을 연결합니다.</summary>
-        private void Awake()
+        private void OnEnable()
         {
-            // 두 브릭이 인스펙터에 정상적으로 조립되어 있는지 검증
-            if (networkWeaponFireGlue != null && muzzleFlashEffectBrick != null)
+            if (networkWeaponFireGlue != null)
             {
-                // ⚡ [접착] 사격 성공 알림 신호가 오면 -> 총구 불빛을 재생하라!
-                networkWeaponFireGlue.OnFireClientNotified += muzzleFlashEffectBrick.PlayEffect;
+                networkWeaponFireGlue.OnFireClientNotified += HandleFire;
             }
         }
 
         /// <summary>오브젝트가 파괴될 때 발사 이벤트 구독을 해제합니다.</summary>
-        private void OnDestroy()
+        private void OnDisable()
         {
-            // 메모리 누수(누수 방지)를 위해 오브젝트 파괴 시 연결을 끊어줍니다.
-            if (networkWeaponFireGlue != null && muzzleFlashEffectBrick != null)
+            if (networkWeaponFireGlue != null)
             {
-                networkWeaponFireGlue.OnFireClientNotified -= muzzleFlashEffectBrick.PlayEffect;
+                networkWeaponFireGlue.OnFireClientNotified -= HandleFire;
             }
+            characterView?.ResetFireAnimation();
+        }
+
+        /// <summary>기존 발사 승인 알림을 불빛과 애니메이션 View로 각각 전달합니다.</summary>
+        private void HandleFire()
+        {
+            muzzleFlashEffectBrick?.PlayEffect();
+            characterView?.PlayFireAnimation();
         }
     }
 }
