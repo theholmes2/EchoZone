@@ -146,6 +146,7 @@ namespace EchoZone.Heist
                 if (pet != null && pet.IsOwnedBy(NetworkObject))
                 { pets.Add(pet); cargo += pet.GetComponent<PetHeistGlue>()?.Cargo ?? 0; }
             if (!wallet.BeginEscape(cargo)) return;
+            GetComponent<PlayerHeistGlue>()?.NotifySoundServer(EchoZone.Audio.GameplaySoundId.ExtractionStarted);
             var petIds = new HashSet<string>(); foreach (var pet in pets) petIds.Add(pet.PetId);
             wallet.BindRequest(new SettlementRequest { PlayerId = playerId, SessionId = sessionId,
                 RunId = FindFirstObjectByType<EchoZone.Online.Migration.HostMigrationSnapshotCollector>().RunId,
@@ -256,12 +257,14 @@ namespace EchoZone.Heist
                 if (!Current(version) || EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring) return;
                 foreach (var pet in finished) if (pet != null && pet.IsSpawned) pet.NetworkObject.Despawn(true);
                 finalizationConfirmed = true; failures = 0;
+                GetComponent<PlayerHeistGlue>()?.NotifySoundServer(EchoZone.Audio.GameplaySoundId.SettlementSucceeded);
                 status.Value = new FixedString128Bytes("탈출 정산 완료");
             }
             catch (Exception e)
             {
                 if (!Current(version)) return;
                 RecordFailure(e);
+                if (failures == 1) GetComponent<PlayerHeistGlue>()?.NotifySoundServer(EchoZone.Audio.GameplaySoundId.SettlementFailed);
                 Debug.LogWarning($"Escape settlement failed: {e.Message}", this);
             }
             finally { if (Current(version)) { busy = false; SetRetry(config); } }

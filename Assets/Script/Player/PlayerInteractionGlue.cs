@@ -114,6 +114,10 @@ public class PlayerInteractionGlue : NetworkBehaviour
             return interactableBehaviour.TryInteract(gameObject);
         });
 
+        GetComponent<EchoZone.Heist.PlayerHeistGlue>()?.NotifySoundServer(interactionSucceeded
+            ? (interactableBehaviour is ItemPickupInteractable ? EchoZone.Audio.GameplaySoundId.ItemAcquired : EchoZone.Audio.GameplaySoundId.RequestSucceeded)
+            : EchoZone.Audio.GameplaySoundId.RequestFailed);
+
         if (interactionSucceeded == false)
             return;
 

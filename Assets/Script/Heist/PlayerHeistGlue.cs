@@ -35,7 +35,7 @@ namespace EchoZone.Heist
         { if (IsServer && IsSpawned) feedback.Value = new FixedString128Bytes("펫 압수. 절도 현장 적발로 수배되었습니다."); }
         /// <summary>서버의 단일 체포 판정에서 현상금을 지급합니다.</summary>
         public void AddBountyServer(int amount)
-        { if (IsServer && IsSpawned && amount > 0) { wallet?.CreditServer(amount); feedback.Value = new FixedString128Bytes($"체포 현상금 +{amount:N0}"); } }
+        { if (IsServer && IsSpawned && amount > 0) { wallet?.CreditServer(amount); feedback.Value = new FixedString128Bytes($"체포 현상금 +{amount:N0}"); NotifySoundServer(EchoZone.Audio.GameplaySoundId.RewardReceived); } }
         /// <summary>이전 확정 잔액과 현재 수입·지출을 포함한 개인 지갑입니다.</summary>
         public long RewardMoney => wallet != null ? wallet.Balance : 0;
         /// <summary>최근 서버 결과 문자열입니다.</summary>
@@ -46,7 +46,18 @@ namespace EchoZone.Heist
         public void RequestPet(ulong pet, bool report) { if (IsOwner && IsSpawned) ActRpc(report ? (byte)2 : (byte)1, -1, pet); }
         /// <summary>서버 회수 완료에서만 감사비를 적립합니다.</summary>
         public void AddRewardServer(int amount)
-        { if (IsServer && IsSpawned && amount > 0) { wallet?.CreditServer(amount); feedback.Value = new FixedString128Bytes($"신고 감사비 +{amount:N0}"); } }
+        { if (IsServer && IsSpawned && amount > 0) { wallet?.CreditServer(amount); feedback.Value = new FixedString128Bytes($"신고 감사비 +{amount:N0}"); NotifySoundServer(EchoZone.Audio.GameplaySoundId.RewardReceived); } }
+
+        /// <summary>서버가 확정한 개인 결과만 소유자에게 전달합니다. 복원 중 과거 이벤트는 재생하지 않습니다.</summary>
+        public void NotifySoundServer(EchoZone.Audio.GameplaySoundId id)
+        {
+            if (IsServer && IsSpawned && !EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring) SoundOwnerRpc(id);
+        }
+
+        /// <summary>요청자 한 명의 로컬 UI에서만 효과음을 재생합니다.</summary>
+        [Rpc(SendTo.Owner)]
+        private void SoundOwnerRpc(EchoZone.Audio.GameplaySoundId id)
+        { if (IsOwner && IsClient) EchoZone.Audio.GameplaySoundGlue.PlayUI(id); }
         /// <summary>자기 플레이어의 요청만 받고 거리·체력·소유권을 다시 검사합니다.</summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         private void ActRpc(byte action, int building, ulong petId)
@@ -71,6 +82,9 @@ namespace EchoZone.Heist
             feedback.Value = new FixedString128Bytes(success
                 ? (action == 0 ? "펫이 건물로 이동합니다." : action == 1 ? "펫을 데려갑니다." : "신고 접수. 경찰 회수 후 보상 지급.")
                 : "처리 불가: 거리·벽·펫·잔액·신고 상태 확인");
+            NotifySoundServer(action == 0
+                ? (success ? EchoZone.Audio.GameplaySoundId.TheftStarted : EchoZone.Audio.GameplaySoundId.TheftFailed)
+                : (success ? EchoZone.Audio.GameplaySoundId.RequestSucceeded : EchoZone.Audio.GameplaySoundId.RequestFailed));
         }
     }
 }

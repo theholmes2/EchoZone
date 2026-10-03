@@ -91,6 +91,7 @@ namespace EchoZone.Heist
         public override void OnNetworkSpawn()
         {
             Instance = this;
+            WantedPlayers.OnListChanged += WantedSoundChanged;
             sites.Clear(); inspections.Clear(); reports.Clear(); recoveries.Clear(); inspectionRetryAt.Clear();
             retirementGeneration++; pendingRetirements.Clear(); retirementJournal.Clear(); retirementSaving = false; nextRetirementSave = 0;
             foreach (var site in FindObjectsByType<HeistBuildingSite>(FindObjectsSortMode.None))
@@ -107,7 +108,17 @@ namespace EchoZone.Heist
             ResetBuildingIncome(NetworkManager.ServerTime.Time);
         }
         /// <summary>시스템 정리 시 세션 참조를 해제합니다.</summary>
-        public override void OnNetworkDespawn() { retirementGeneration++; if (Instance == this) Instance = null; inspections.Clear(); reports.Clear(); }
+        public override void OnNetworkDespawn() { WantedPlayers.OnListChanged -= WantedSoundChanged; retirementGeneration++; if (Instance == this) Instance = null; inspections.Clear(); reports.Clear(); }
+
+        /// <summary>초기 스냅샷이 아닌 로컬 수배 목록의 추가·삭제 이벤트에서만 개인 피드백을 재생합니다.</summary>
+        private void WantedSoundChanged(NetworkListEvent<ulong> change)
+        {
+            if (!IsClient || EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring || change.Value != NetworkManager.LocalClientId) return;
+            if (change.Type == NetworkListEvent<ulong>.EventType.Add)
+                EchoZone.Audio.GameplaySoundGlue.PlayUI(EchoZone.Audio.GameplaySoundId.WantedStarted);
+            else if (change.Type == NetworkListEvent<ulong>.EventType.Remove || change.Type == NetworkListEvent<ulong>.EventType.RemoveAt)
+                EchoZone.Audio.GameplaySoundGlue.PlayUI(EchoZone.Audio.GameplaySoundId.WantedCleared);
+        }
         /// <summary>식별자로 씬 출입구를 해석합니다.</summary>
         public HeistBuildingSite Site(int id) => sites.TryGetValue(id, out var site) ? site : null;
         /// <summary>동기화 목록에서 건물 상태를 읽습니다.</summary>

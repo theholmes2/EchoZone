@@ -232,7 +232,7 @@ namespace EchoZone.Combat.Glue
             networkObject.Spawn(true);
             projectileGlue.InitializeServer(muzzle.position, finalDirection, config.Damage, NetworkObject);
             weaponFireBrick.CommitFire(currentServerTime);
-            NotifyFireClientRpc();
+            NotifyFireClientRpc(muzzle.position, NetworkObject.IsPlayerObject);
 
             if (weaponFireBrick.Ammunition <= 0)
             {
@@ -318,8 +318,9 @@ namespace EchoZone.Combat.Glue
 
         /// <summary>서버가 승인한 발사 사실을 모든 Client의 해당 플레이어 인스턴스에 전달합니다.</summary>
         [ClientRpc]
-        private void NotifyFireClientRpc()
+        private void NotifyFireClientRpc(Vector3 shotPosition, bool playerShot)
         {
+            EchoZone.Audio.GameplaySoundGlue.PlayWorld(playerShot ? EchoZone.Audio.GameplaySoundId.PlayerShot : EchoZone.Audio.GameplaySoundId.PoliceShot, shotPosition);
             OnFireClientNotified?.Invoke();
         }
 

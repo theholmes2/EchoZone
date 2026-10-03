@@ -19,7 +19,7 @@ namespace EchoZone.Heist
         public void RestoreMigrationCargo(int amount, int restoredGrade)
         {
             if (!IsServer) return;
-            CancelServer(); grade = Mathf.Max(1, restoredGrade); SetCargoServer(amount);
+            CancelServer(false); grade = Mathf.Max(1, restoredGrade); SetCargoServer(amount);
         }
         /// <summary>서버에서 진행 중인 건물 번호입니다.</summary>
         public int BuildingId => buildingId.Value;
@@ -47,6 +47,8 @@ namespace EchoZone.Heist
         private readonly NetworkVariable<bool> reported = new();
         /// <summary>진행 중인 건물입니다. 서버에서만 사용합니다.</summary>
         private HeistBuildingSite site;
+        /// <summary>작업 종료 전 소유권이 끊겨도 결과를 보낼 원래 요청자입니다.</summary>
+        private NetworkObject jobOwner;
         /// <summary>현재 펫 소속 및 대기 상태입니다.</summary>
         private PetStateGlue state;
         /// <summary>기존 이동 제어입니다.</summary>
@@ -95,6 +97,7 @@ namespace EchoZone.Heist
                 Vector3.Distance(transform.position, player.transform.position) > world.Config.PetCommandDistance || !agent.isOnNavMesh) return false;
             var path = new NavMeshPath();
             if (!agent.CalculatePath(target.Entrance, path) || path.status != NavMeshPathStatus.PathComplete) return false;
+            jobOwner = player;
             site = target; buildingId.Value = target.Id; phase.Value = PetHeistPhase.Approaching;
             finishAt.Value = NetworkManager.ServerTime.Time + world.Config.TravelTimeout;
             follow.MoveServer(site.Entrance, world.Config.WorkMoveSpeed, world.Config.ArrivalDistance);
@@ -115,12 +118,20 @@ namespace EchoZone.Heist
                 { follow.StopServer(); phase.Value = PetHeistPhase.Stealing; finishAt.Value = now + world.Config.StealSeconds; world.TryCatchStealing(this); }
             }
             else if (now >= finishAt.Value)
-            { world.CompleteTheft(this, site.Id, owner); CancelServer(); }
+            {
+                bool success = world.CompleteTheft(this, site.Id, owner);
+                jobOwner?.GetComponent<PlayerHeistGlue>()?.NotifySoundServer(success
+                    ? EchoZone.Audio.GameplaySoundId.TheftSucceeded : EchoZone.Audio.GameplaySoundId.TheftFailed);
+                CancelServer(false);
+            }
         }
         /// <summary>주인 사망·도주·실패 시 미완료 절도는 돈을 변경하지 않고 종료합니다.</summary>
-        public void CancelServer()
+        public void CancelServer(bool notifyFailure = true)
         {
             if (!IsServer || !IsSpawned) return;
+            if (notifyFailure && IsBusy && jobOwner != null && jobOwner.IsSpawned)
+                jobOwner.GetComponent<PlayerHeistGlue>()?.NotifySoundServer(EchoZone.Audio.GameplaySoundId.TheftFailed);
+            jobOwner = null;
             phase.Value = PetHeistPhase.None; finishAt.Value = 0; site = null; buildingId.Value = -1;
             follow.StopServer(); follow.ResetFollowTarget();
         }
