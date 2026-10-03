@@ -11,6 +11,10 @@ namespace EchoZone.Heist
         [SerializeField] private Transform entrance;
         /// <summary>HUD에서 표시할 이름입니다.</summary>
         [SerializeField] private string displayName;
+        /// <summary>절도와 정기 검사를 허용하는 건물입니다. 끄더라도 저장 원장의 식별자는 유지합니다.</summary>
+        [SerializeField] private bool lootEnabled = true;
+        /// <summary>이번 맵에서 돈을 훔칠 수 있는 건물인지 나타냅니다.</summary>
+        public bool IsLootSite => lootEnabled;
         /// <summary>서버 원장과 동기화 목록의 키입니다.</summary>
         public int Id => buildingId;
         /// <summary>건물 표시 이름입니다.</summary>

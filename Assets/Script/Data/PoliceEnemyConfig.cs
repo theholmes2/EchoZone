@@ -6,6 +6,14 @@ namespace EchoZone.Enemy
     [CreateAssetMenu(fileName = "PoliceEnemyConfig", menuName = "EchoZone/Enemy/Police Enemy Config")]
     public sealed class PoliceEnemyConfig : ScriptableObject
     {
+        /// <summary>시야 상실 후 마지막 목격 지점까지 이동할 최대 초입니다.</summary>
+        [Min(1)] public float LostTargetTravelSeconds = 30f;
+        /// <summary>추격 경로가 막혀 진전이 없을 때 포기할 초입니다.</summary>
+        [Min(1)] public float LostTargetStuckSeconds = 6f;
+        /// <summary>정체 타이머를 갱신할 최소 수평 이동량입니다.</summary>
+        [Min(0.01f)] public float LostTargetProgressDistance = 0.25f;
+        /// <summary>실제 확인한 발 위치를 NavMesh 지면에 투영할 반경입니다.</summary>
+        [Min(0.1f)] public float LastKnownGroundSampleRadius = 2f;
         /// <summary>경찰 목적지 사이의 최소 간격입니다.</summary>
         [Min(0.1f)] public float DestinationSpacing = 1.1f;
         /// <summary>원래 목적지 주위 대체 목적지 반경입니다.</summary>

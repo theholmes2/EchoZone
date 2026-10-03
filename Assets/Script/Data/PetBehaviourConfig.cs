@@ -2,12 +2,18 @@ using UnityEngine;
 
 namespace EchoZone.Pet
 {
-    /// <summary>도주 후보·경찰 회피·대기 회복·주인 변경의 조절값입니다.</summary>
+        /// <summary>도주 후보·경찰 회피·대기 회복·주인 변경의 조절값입니다.</summary>
     [CreateAssetMenu(menuName = "EchoZone/Pet/Behaviour Config")]
     public sealed class PetBehaviourConfig : ScriptableObject
     {
         /// <summary>도주 시작 당시 플레이어를 중심으로 탐색할 첫 원의 반지름입니다.</summary>
         [Min(1f)] public float EscapeRadius = 25f;
+        /// <summary>한 회차에 허용하는 실제 도주 진입 횟수입니다.</summary>
+        [Min(1)] public int MaximumEscapeCount = 5;
+        /// <summary>첫 도주부터 경찰 수거를 유예하는 최소 시간입니다.</summary>
+        [Min(0)] public float ReclaimGraceSeconds = 30f;
+        /// <summary>안전 지점에 도착하지 못한 도주 시도의 제한시간입니다.</summary>
+        [Min(1)] public float EscapeFailureSeconds = 20f;
         /// <summary>첫 원에 후보가 없을 때 다음 원을 넓힐 거리입니다.</summary>
         [Min(1f)] public float RingSpacing = 10f;
         /// <summary>한 번의 탐색에서 검사할 동심원 수입니다.</summary>

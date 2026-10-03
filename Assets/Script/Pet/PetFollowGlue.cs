@@ -11,6 +11,8 @@ namespace EchoZone.Pet
     {
         /// <summary>공통 추종 설정입니다.</summary>
         [SerializeField] private PetFollowConfig config;
+        /// <summary>카탈로그와 프리팹의 설정 일치 검증에 사용합니다.</summary>
+        public PetFollowConfig FollowConfig => config;
         /// <summary>걷기·피격·사망 표시를 분리한 동물 View입니다.</summary>
         [SerializeField] private PetAnimatorView view;
         /// <summary>돈 기능이 없는 임시 상자 외형입니다.</summary>

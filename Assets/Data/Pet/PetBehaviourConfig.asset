@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: PetBehaviourConfig
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Pet.PetBehaviourConfig
   EscapeRadius: 25
+  MaximumEscapeCount: 5
+  ReclaimGraceSeconds: 30
+  EscapeFailureSeconds: 20
   RingSpacing: 10
   RingCount: 3
   CandidateCount: 24

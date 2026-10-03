@@ -12,7 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff414e75cbd77854da49bf8fe9849625, type: 3}
   m_Name: HeistConfig
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Heist.HeistConfig
+  InspectionAgingSeconds: 30
+  MinimumDistrictPatrol: 2
+  MaximumDistrictDuties: 4
   InitialBuildingMoney: 10000
+  BuildingIncomeInterval: 30
+  BuildingIncomeAmount: 500
+  BuildingIncomeCap: 20000
   MoneyPerTheft: 1000
   PetCapacity: 5000
   MaximumLoadSlowdown: 0.65
@@ -25,19 +31,25 @@ MonoBehaviour:
   CrimeSearchRadius: 20
   CrimeSearchPointCount: 8
   CrimeSearchWaitSeconds: 3
+  CrimeSearchTurnSpeed: 60
+  CrimeSearchLookAngle: 55
   CrimeSearchSampleRadius: 2
   CaptureBounty: 500
   StealSeconds: 8
   InspectionInterval: 180
   FirstInspectionDelay: 120
   InspectionStagger: 3
-  InspectionSeconds: 5
+  InspectionSeconds: 1
   TravelTimeout: 60
   JobSearchInterval: 1
   InteractionDistance: 4
   PetCommandDistance: 15
   ArrivalDistance: 0.6
   WorkMoveSpeed: 5
+  InspectionRunSpeed: 6
+  WorkStuckSeconds: 6
+  WorkProgressDistance: 0.25
+  InspectionRetrySeconds: 3
   ConfiscationDistance: 1.8
   ReportRewardRate: 0.05
   BlockingLayers:
@@ -45,3 +57,6 @@ MonoBehaviour:
     m_Bits: 4294967295
   RequestInterval: 0.25
   HudRefreshSeconds: 0.15
+  RestoreSpacing: 1.1
+  RestoreSampleRadius: 0.5
+  RestorePositionCandidates: 32

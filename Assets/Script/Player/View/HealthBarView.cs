@@ -17,10 +17,33 @@ namespace EchoZone.Player.View
         private Camera targetCamera;
         /// <summary>fullFillAnchorMaxX 값을 저장합니다.</summary>
         private float fullFillAnchorMaxX;
-
+        /// <summary>체력 이벤트와 독립적으로 표시만 끄는 Canvas입니다.</summary>
+        private Canvas displayCanvas;
+        /// <summary>풀 재사용 시 배율이 누적되지 않도록 저장한 원본 크기입니다.</summary>
+        private Vector3 initialScale;
+        /// <summary>공용 프리팹 복사본에 모델별 표시 설정을 적용합니다.</summary>
+        public void ApplyLayout(HealthBarDisplayConfig config)
+        { transform.localPosition = config.LocalOffset; transform.localScale = initialScale * config.ScaleMultiplier; }
+        /// <summary>체력 구독을 끊지 않고 Canvas만 제어합니다.</summary>
+        public void SetVisible(bool visible) { requestedVisible = visible; RefreshVisibility(); }
+        /// <summary>Glue가 합성한 명시적 표시 상태입니다.</summary>
+        private bool requestedVisible = true;
+        /// <summary>현재 모델의 Renderer 숨김도 기존 LateUpdate에서 함께 확인합니다.</summary>
+        private Renderer[] bodyRenderers;
+        /// <summary>명시적 숨김과 전체 외형 숨김 중 하나라도 있으면 UI를 감춥니다.</summary>
+        private void RefreshVisibility()
+        {
+            bool bodyVisible = bodyRenderers == null || bodyRenderers.Length == 0;
+            if (bodyRenderers != null)
+                foreach (var r in bodyRenderers)
+                    if (r != null && r.enabled && !r.forceRenderingOff && r.gameObject.activeInHierarchy) { bodyVisible = true; break; }
+            if (displayCanvas != null) displayCanvas.enabled = requestedVisible && bodyVisible;
+        }
         /// <summary>프리팹에 설정된 최대 체력바 너비를 저장합니다.</summary>
         private void Awake()
         {
+            displayCanvas = GetComponentInChildren<Canvas>(true);
+            initialScale = transform.localScale;
             transform.localPosition = localOffset;
 
             if (fillRect != null)
@@ -39,6 +62,7 @@ namespace EchoZone.Player.View
             }
 
             playerStats = source;
+            bodyRenderers = source != null ? source.GetComponentsInChildren<Renderer>(true) : null;
 
             if (playerStats == null)
             {
@@ -62,6 +86,7 @@ namespace EchoZone.Player.View
         /// <summary>매 프레임 체력바가 현재 카메라와 같은 방향을 바라보게 합니다.</summary>
         private void LateUpdate()
         {
+            RefreshVisibility();
             if (targetCamera == null)
             {
                 targetCamera = Camera.main;

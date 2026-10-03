@@ -45,8 +45,6 @@ namespace EchoZone.Enemy
         private PoliceEnemyState currentState = PoliceEnemyState.Patrol;
         /// <summary>현재 경찰이 발견하거나 추격 중인 플레이어입니다.</summary>
         private Transform currentTarget;
-        /// <summary>마지막 목격 위치 수색을 종료할 서버 시각입니다.</summary>
-        private float searchEndTime;
         /// <summary>다음 총기 발사를 허용할 서버 시각입니다.</summary>
         private float nextFireTime;
         /// <summary>현재 점사 묶음에서 요청한 발사 횟수입니다.</summary>
@@ -63,6 +61,8 @@ namespace EchoZone.Enemy
         private bool targetIdentified;
         /// <summary>현재 경찰이 소속된 경찰서의 스폰 그룹 인덱스입니다.</summary>
         private int stationIndex = -1;
+        /// <summary>구역별 순찰 잔류 인원을 집계할 소속 경찰서 번호입니다.</summary>
+        public int StationIndex => stationIndex;
         /// <summary>이동 결과를 애니메이션으로 표시하는 기존 View입니다.</summary>
         private CharacterAnimatorView animatorView;
         /// <summary>로컬 화면에서 직전 프레임에 관찰한 위치입니다.</summary>
@@ -77,8 +77,6 @@ namespace EchoZone.Enemy
         private DamageReceiverGlue damageReceiver;
         /// <summary>피격으로 신원이 확인된 대상을 일반 근접 후보보다 우선합니다.</summary>
         private bool pursuingAttacker;
-        /// <summary>시야 밖 공격 위치를 향한 최초 추격의 제한 시각입니다.</summary>
-        private float attackerPursuitEndTime;
         /// <summary>승인한 분산 목적지와 경로 갱신 시각입니다.</summary>
         private Vector3 reservedDestination, requestedDestination, progressPosition;
         private bool hasReservedDestination;
@@ -145,6 +143,7 @@ namespace EchoZone.Enemy
         /// <summary>모든 피어에서 View 갱신을 등록하고 서버에서만 NavMesh 이동 수치를 초기화합니다.</summary>
         public override void OnNetworkSpawn()
         {
+            lostPursuit.Reset(); pursuitStall = 0;
             pendingMigrationTarget = null;
             if (IsServer) PoliceId = System.Guid.NewGuid().ToString("N");
             deathGlue = GetComponent<PoliceDeadEventGlue>();
@@ -157,7 +156,7 @@ namespace EchoZone.Enemy
             currentState = PoliceEnemyState.Patrol;
             currentTarget = null;
             targetIdentified = false;
-            searchEndTime = nextFireTime = nextOrbitSwitchTime = 0f;
+            nextFireTime = nextOrbitSwitchTime = 0f;
             currentBurstShotCount = 0;
             orbitSign = 1f;
             isWaitingAtPatrolPoint = canSeeCurrentTarget = false;
@@ -167,6 +166,7 @@ namespace EchoZone.Enemy
             ApplyWeaponType(equippedWeaponType.Value);
             animatorView = GetComponentInChildren<CharacterAnimatorView>(true);
             previousViewPosition = transform.position;
+            InitializePlayerCollisions();
             FindFirstObjectByType<EnemyUpdateManager>()?.Register(this);
             if (!IsServer)
             {
@@ -205,6 +205,7 @@ namespace EchoZone.Enemy
             if (damageReceiver != null) damageReceiver.ServerDamageApplied -= HandleServerDamage;
             pursuingAttacker = false;
             equippedWeaponType.OnValueChanged -= HandleWeaponTypeChanged;
+            ShutdownPlayerCollisions();
             FindFirstObjectByType<EnemyUpdateManager>()?.Unregister(this);
             animatorView?.UpdateMovementAnimation(Vector2.zero);
             if (IsServer)
@@ -226,9 +227,10 @@ namespace EchoZone.Enemy
             pursuingAttacker = true;
             targetIdentified = true;
             perceptionBrick.Reset();
-            perceptionBrick.RememberTargetPosition(attacker.transform.position);
+            RememberGroundPosition(attacker.transform.position);
+            lastAimPoint = attacker.transform.position;
+            lostPursuit.Reset();
             float now = NetworkManager.ServerTime.TimeAsFloat;
-            attackerPursuitEndTime = now + config.SearchDurationSeconds;
             FaceCurrentTarget();
             canSeeCurrentTarget = EvaluatePerception();
             ChangeState(canSeeCurrentTarget && HorizontalDistance(transform.position, currentTarget.position) <= config.MaximumAttackDistance
@@ -259,6 +261,7 @@ namespace EchoZone.Enemy
         /// <summary>서버와 클라이언트가 각자 관찰한 수평 이동 변위를 기존 View에 전달합니다.</summary>
         public void ManualUpdateView()
         {
+            ManualUpdatePlayerCollisions();
             Vector3 position = transform.position;
             Vector3 delta = position - previousViewPosition;
             previousViewPosition = position;
@@ -268,6 +271,7 @@ namespace EchoZone.Enemy
         /// <summary>중앙 적 업데이트 관리자가 서버에서 정해진 순서로 호출할 진입점입니다.</summary>
         public void ManualUpdate(float serverTime, float deltaTime)
         {
+            pursuitDelta = Mathf.Max(0, deltaTime);
             deathGlue?.ManualUpdate(serverTime);
             if (!IsSpawned) return;
             if (deathBlocked || !IsServer || config == null || navigationAgent == null || !navigationAgent.enabled)
@@ -286,7 +290,7 @@ namespace EchoZone.Enemy
             weaponFireGlue?.ManualUpdate(serverTime);
 
             if (canSeeCurrentTarget) heistDuty?.CancelServer();
-            else if (currentTarget == null && heistDuty != null && heistDuty.ManualUpdateServer()) return;
+            else if (currentTarget == null && !perceptionBrick.HasLastKnownPosition && heistDuty != null && heistDuty.ManualUpdateServer()) return;
 
             SelectState(serverTime);
 
@@ -406,7 +410,9 @@ namespace EchoZone.Enemy
 
             if (currentTarget != bestTarget) { perceptionBrick.Reset(); targetIdentified = false; }
             currentTarget = bestTarget;
-            perceptionBrick.RememberTargetPosition(bestAimPoint);
+            lastAimPoint = bestAimPoint;
+            RememberGroundPosition(bestTarget.position);
+            lostPursuit.Reset();
             return true;
         }
 
@@ -427,23 +433,12 @@ namespace EchoZone.Enemy
                         ? PoliceEnemyState.Combat
                         : PoliceEnemyState.Chase;
                 ChangeState(visibleState, serverTime);
-                attackerPursuitEndTime = serverTime;
                 return;
             }
 
-            if (pursuingAttacker && currentTarget != null && perceptionBrick.HasLastKnownPosition &&
-                serverTime < attackerPursuitEndTime &&
-                !patrolBrick.HasReachedPoint(transform.position, perceptionBrick.LastKnownPosition, config.LastKnownPositionArrivalDistance))
+            if (perceptionBrick.HasLastKnownPosition)
             {
-                ChangeState(PoliceEnemyState.Chase, serverTime);
-                return;
-            }
-
-            if (perceptionBrick.HasLastKnownPosition &&
-                currentState != PoliceEnemyState.Patrol &&
-                currentState != PoliceEnemyState.Search)
-            {
-                ChangeState(PoliceEnemyState.Search, serverTime);
+                ChangeState(lostPursuit.Arrived ? PoliceEnemyState.Search : PoliceEnemyState.Chase, serverTime);
                 return;
             }
 
@@ -503,6 +498,8 @@ namespace EchoZone.Enemy
         /// <summary>현재 보이는 플레이어를 추격합니다.</summary>
         private void TickChase()
         {
+            if (!canSeeCurrentTarget && perceptionBrick.HasLastKnownPosition)
+            { TickLostPursuit((float)NetworkManager.ServerTime.Time); return; }
             if (currentTarget == null)
             {
                 StopMoving();
@@ -552,7 +549,7 @@ namespace EchoZone.Enemy
                 serverTime >= nextFireTime)
             {
                 Vector3 fireDirection =
-                    perceptionBrick.LastKnownPosition - weaponFireGlue.MuzzlePosition;
+                    lastAimPoint - weaponFireGlue.MuzzlePosition;
                 weaponFireGlue.RequestFire(fireDirection.normalized);
                 currentBurstShotCount++;
 
@@ -577,29 +574,7 @@ namespace EchoZone.Enemy
                 return;
             }
 
-            navigationAgent.speed = config.ChaseMoveSpeed;
-            Vector3 lastKnownPosition = perceptionBrick.LastKnownPosition;
-            if (patrolBrick.HasReachedPoint(
-                    transform.position,
-                    lastKnownPosition,
-                    config.LastKnownPositionArrivalDistance))
-            {
-                StopMoving();
-            }
-            else
-            {
-                MoveTo(lastKnownPosition);
-            }
-
-            if (serverTime >= searchEndTime)
-            {
-                perceptionBrick.ForgetLastKnownPosition();
-                currentTarget = null;
-                targetIdentified = false;
-                pursuingAttacker = false;
-                perceptionBrick.Reset();
-                ChangeState(PoliceEnemyState.Patrol, serverTime);
-            }
+            TickLostPursuit(serverTime);
         }
 
         /// <summary>상태 진입 시 한 번만 필요한 대기·수색 값을 초기화합니다.</summary>
@@ -611,13 +586,11 @@ namespace EchoZone.Enemy
             }
 
             currentState = nextState;
+            SetPlayerBlockingServer(nextState == PoliceEnemyState.Combat);
             ReleaseDestination();
             isWaitingAtPatrolPoint = false;
 
-            if (nextState == PoliceEnemyState.Search)
-            {
-                searchEndTime = serverTime + config.SearchDurationSeconds;
-            }
+            if (nextState == PoliceEnemyState.Patrol) lostPursuit.Reset();
 
             if (nextState == PoliceEnemyState.Combat)
             {

@@ -5,23 +5,26 @@ using Unity.Services.CloudCode;
 namespace EchoZone.Heist
 {
     /// <summary>Cloud Code 응답입니다. 무기·방어구는 아직 포함하지 않습니다.</summary>
-    public sealed class WalletCloudRecord
+    public sealed class WalletCloudRecord : SettlementWalletRecord
     {
-        /// <summary>마지막 확정 잔액입니다.</summary>
-        public long Balance;
-        /// <summary>계정 저장 버전입니다.</summary>
-        public long Revision;
-        /// <summary>마지막 탈출의 출처 세션이며 재입장 제한에는 사용하지 않습니다.</summary>
-        public string LastSessionId;
-        /// <summary>재전송을 구분할 마지막 탈출 정산 ID입니다.</summary>
-        public string LastSettlementId;
-        /// <summary>클라우드 서버 저장 UTC입니다.</summary>
-        public string SavedAtUtc;
     }
 
     /// <summary>금액 계산 없이 호스트의 요청을 Cloud Code에 전달하는 서비스입니다.</summary>
     public sealed class WalletCloudService
     {
+        /// <summary>금액과 PlayerId 입력 없이 인증된 본인의 지갑만 입장 전에 준비합니다.</summary>
+        public Task<WalletCloudRecord> EnsureOwn(RelaySessionConfig config) =>
+            CloudCodeService.Instance.CallModuleEndpointAsync<WalletCloudRecord>(config.WalletModuleName,
+                config.WalletAdmissionFunction, new Dictionary<string, object>());
+        /// <summary>Cloud 체크포인트의 계정 포함 여부를 검증한 뒤 미접속 계정도 복구 전에 대조합니다.</summary>
+        public Task<WalletCloudRecord> LoadForRun(ExtractionConfig config, string session, string player, string run) =>
+            CloudCodeService.Instance.CallModuleEndpointAsync<WalletCloudRecord>(config.ModuleName, config.RecoveryFunction,
+                new Dictionary<string, object> { { "sessionId", session }, { "playerId", player }, { "runId", run } });
+        /// <summary>최초 승인한 본문을 Cloud 영속 outbox에 접수합니다.</summary>
+        public Task<WalletCloudRecord> Prepare(ExtractionConfig config, string session, string player, SettlementRequest request) =>
+            CloudCodeService.Instance.CallModuleEndpointAsync<WalletCloudRecord>(config.ModuleName, config.PrepareFunction,
+                new Dictionary<string, object> { { "sessionId", session }, { "playerId", player },
+                    { "requestJson", Newtonsoft.Json.JsonConvert.SerializeObject(request) } });
         /// <summary>서버가 확인한 계정 ID로 기준 잔액을 읽습니다.</summary>
         public Task<WalletCloudRecord> Load(ExtractionConfig config, string session, string player) =>
             CloudCodeService.Instance.CallModuleEndpointAsync<WalletCloudRecord>(config.ModuleName, config.LoadFunction,

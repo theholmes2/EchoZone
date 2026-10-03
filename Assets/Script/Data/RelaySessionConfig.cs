@@ -9,6 +9,12 @@ using UnityEngine;
 /// <summary>RelaySessionConfig 관련 기능과 데이터를 제공하는 형식입니다.</summary>
 public sealed class RelaySessionConfig : ScriptableObject
 {
+    /// <summary>방 입장 전에 본인 지갑을 준비할 Cloud Code 모듈입니다.</summary>
+    public string WalletModuleName = "HostMigrationModule";
+    /// <summary>입장 전 본인의 Protected 지갑을 준비하고 재조회할 함수입니다.</summary>
+    public string WalletAdmissionFunction = "EnsureOwnWallet";
+    /// <summary>실패 시 버튼 연타로 Cloud 요청이 반복되지 않을 최소 간격입니다.</summary>
+    [Min(1f)] public float WalletAdmissionRetrySeconds = 5f;
     [Header("Session Capacity")]
     [SerializeField, Min(2)] private int maxPlayers = 2;
 

@@ -12,6 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 500840f9ca9a444eb27642bf3fbe92d2, type: 3}
   m_Name: PoliceEnemyConfig
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Enemy.PoliceEnemyConfig
+  LostTargetTravelSeconds: 30
+  LostTargetStuckSeconds: 6
+  LostTargetProgressDistance: 0.25
+  LastKnownGroundSampleRadius: 2
+  DestinationSpacing: 1.1
+  DestinationSpread: 1.5
+  DestinationCandidates: 12
+  DestinationSampleRadius: 0.5
+  RepathSeconds: 0.35
+  StuckSeconds: 4
+  ProgressDistance: 0.2
   policePrefab: {fileID: 7649781563020928400, guid: 13d722a4cc1b2894ea6eca52e7020d7c, type: 3}
   visualHeight: 2.25
   collisionHeight: 2

@@ -68,7 +68,11 @@ namespace EchoZone.Heist
         /// <summary>신고 접수 표시입니다.</summary>
         public bool Reported => reported.Value;
         /// <summary>경찰이 공격 대신 회수할 주인 없는 장물입니다.</summary>
-        public bool IsAbandonedCargo => IsSpawned && Cargo > 0 && state.State == PetBehaviourState.Waiting;
+        public bool IsAbandonedCargo => IsSpawned && Cargo > 0 && (state.State == PetBehaviourState.Waiting || state.IsCollectionWaiting);
+        /// <summary>유예를 마친 수거 대기 펫은 장물이 없어도 회수할 수 있습니다.</summary>
+        public bool CanBeRecovered => IsSpawned && state.AllowsPoliceRecovery && (Cargo > 0 || state.IsCollectionWaiting) &&
+            !(HeistWorldGlue.Instance?.IsRetiredPet(state.PetId) ?? false) &&
+            !(HeistWorldGlue.Instance?.IsSettlementPet(state.PetId) ?? false);
         /// <summary>기존 컴포넌트를 캐시합니다.</summary>
         private void Awake() { state = GetComponent<PetStateGlue>(); follow = GetComponent<PetFollowGlue>(); agent = GetComponent<NavMeshAgent>(); interior = GetComponent<HeistInteriorView>(); }
         /// <summary>늦게 참가한 피어도 내부 상태를 적용합니다.</summary>
@@ -85,7 +89,7 @@ namespace EchoZone.Heist
         public bool TryStartServer(NetworkObject player, HeistBuildingSite target)
         {
             var world = HeistWorldGlue.Instance;
-            if (!IsServer || !IsSpawned || world == null || target == null || IsBusy || !state.IsOwnedBy(player) ||
+            if (!IsServer || !IsSpawned || world == null || target == null || !target.IsLootSite || IsBusy || !state.IsOwnedBy(player) ||
                 world.IsRetiredPet(state.PetId) ||
                 GetComponent<PlayerStats>().IsDead || world.Status(target.Id).Money <= 0 || Cargo >= world.Config.PetCapacity ||
                 Vector3.Distance(transform.position, player.transform.position) > world.Config.PetCommandDistance || !agent.isOnNavMesh) return false;

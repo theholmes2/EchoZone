@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7719400560638219498}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_shoulder.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -41,7 +41,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7470349290103901303}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: scull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -75,7 +75,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7061539113855567160}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_thigh.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -108,7 +108,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7006249643692838440}
   - component: {fileID: 5382605917403818336}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Dog_View
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -163,7 +163,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7424280734855157883}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -195,7 +195,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 807030501718483850}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_foot.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -227,7 +227,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9054067910893655357}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_shoulder.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -259,7 +259,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4359978556941319372}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_toe.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -290,7 +290,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2043458997917539319}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: jaw
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -321,7 +321,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5638691264617994764}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.007
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -369,7 +369,8 @@ GameObject:
   - component: {fileID: 995319391607449620}
   - component: {fileID: 7137747343248961042}
   - component: {fileID: 1695474779554220858}
-  m_Layer: 8
+  - component: {fileID: 3229019608770080262}
+  m_Layer: 10
   m_Name: NetworkDogPet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -628,6 +629,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Pet.PetStateGlue
   ShowTopMostFoldoutHeaderGroup: 1
+  definitionId: pet.dog.basic
   config: {fileID: 11400000, guid: 196dc9ccf24ddc343a93d7ed29b22db0, type: 2}
 --- !u!114 &5502076826351277527
 MonoBehaviour:
@@ -678,6 +680,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Heist.PetHeistGlue
   ShowTopMostFoldoutHeaderGroup: 1
+  grade: 1
+--- !u!114 &3229019608770080262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3076401299791258536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9f6dbcc53b64199999d75a74504d87c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.View.PlayerHealthBarGlue
+  healthBarPrefab: {fileID: 1003, guid: faff4f93685c482a909fdb8dad736df7, type: 3}
+  displayConfig: {fileID: 11400000, guid: 35ac8be8777846c4fa06f0bca9e2f8ee, type: 2}
 --- !u!1 &3499079686084591891
 GameObject:
   m_ObjectHideFlags: 0
@@ -687,7 +704,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7307722248642684617}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.006
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -721,7 +738,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5809915950903360343}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: shin.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -753,7 +770,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3785959043140090950}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.004
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -788,7 +805,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4986068000743324511}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: foot.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -820,7 +837,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3578751817300021154}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: shin.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -852,7 +869,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5751034559008464399}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_thigh.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -884,7 +901,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2075654733477291615}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: foot.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -916,7 +933,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3607558205642425447}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.008
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -948,7 +965,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5052806178373681944}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_shin.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -980,7 +997,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5828110739678696688}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.002
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1012,7 +1029,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2250702323577729840}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: toe.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1043,7 +1060,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1021365721572592368}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.003
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1075,7 +1092,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6195109708384625713}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: ear.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1106,7 +1123,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6032370965940483524}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: toe.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1137,7 +1154,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1698961226342524905}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: thigh.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1169,7 +1186,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 424432909093849093}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Dog_001_rig
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1202,7 +1219,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7968171031557070190}
   - component: {fileID: 2542980514963174128}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Dog_001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1327,7 +1344,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4965633534548278133}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_foot.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1359,7 +1376,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4511583464266389044}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_toe.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1390,7 +1407,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6162677427607105614}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine.005
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1422,7 +1439,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1623859088596447112}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Root
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1454,7 +1471,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1496909102439263404}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: shoulder.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1486,7 +1503,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1055835770439813751}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: thigh.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1518,7 +1535,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1311719210601440343}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: front_shin.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1550,7 +1567,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6811695760680926831}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: shoulder.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1582,7 +1599,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4042784639699232757}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: ear.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1613,7 +1630,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4596936929411996874}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: spine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1646,6 +1663,14 @@ PrefabInstance:
     - target: {fileID: 2010823831540085140, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
       propertyPath: m_Name
       value: CrownedChest_PF_BIRP
+      objectReference: {fileID: 0}
+    - target: {fileID: 2010823831540085140, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 2941952635868756123, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 3316803802724495495, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
       propertyPath: m_LocalScale.x
@@ -1703,6 +1728,18 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3852280076377484078, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 5143603894877959754, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 5310826815543642493, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 5920884046092451631, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.21558756
@@ -1722,6 +1759,30 @@ PrefabInstance:
     - target: {fileID: 5920884046092451631, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
       value: 155.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6440398189767845269, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6852093491788493062, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7468180030287663802, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7883166842510129628, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7946291278196841165, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8320600521195427804, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8895163604789371702, guid: 5b15036ca71f9a449835c29da1d22b92, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

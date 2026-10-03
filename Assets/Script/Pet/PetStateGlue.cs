@@ -5,12 +5,18 @@ using UnityEngine.AI;
 namespace EchoZone.Pet
 {
     /// <summary>서버 권한 펫 행동 상태입니다. 체력 0은 영구 사망이 아닌 도주 계기입니다.</summary>
-    public enum PetBehaviourState : byte { Following, Fleeing, Waiting }
+    public enum PetBehaviourState : byte { Following, Fleeing, Waiting, CollectionWaiting }
 
     /// <summary>펫별 주인과 도주·대기·회복을 관리하며 이동은 Follow Glue에 위임합니다.</summary>
     [RequireComponent(typeof(PetFollowGlue), typeof(PlayerStats), typeof(PetEscapePlanner))]
     public sealed partial class PetStateGlue : NetworkBehaviour
     {
+        /// <summary>카탈로그의 종류 ID입니다. 개체별 PetId와 별개이며 프리팹에서 지정합니다.</summary>
+        [SerializeField] private string definitionId;
+        /// <summary>복구용 종류 식별자입니다.</summary>
+        public string DefinitionId => definitionId;
+        /// <summary>카탈로그 연결 검증용 행동 설정입니다.</summary>
+        public PetBehaviourConfig BehaviourConfig => config;
         /// <summary>마이그레이션과 회수 완료 기록에 사용할 펫 고정 식별자입니다.</summary>
         public string PetId { get; private set; } = System.Guid.NewGuid().ToString("N");
         /// <summary>이전 주인 신원입니다. 도주 및 재접속 대기에서도 보존합니다.</summary>
@@ -45,6 +51,12 @@ namespace EchoZone.Pet
         private float recovery;
         /// <summary>도주 후 대기한 펫만 새로운 경찰 접근에 재도주합니다.</summary>
         private bool watchThreats;
+        /// <summary>경로 계산과 독립적으로 관리하는 도주 회차입니다.</summary>
+        private readonly PetEscapeEpisodeBrick escapeEpisode = new();
+        /// <summary>장물이 없어도 경찰에게 회수를 요청하는 최종 대기 상태입니다.</summary>
+        public bool IsCollectionWaiting => State == PetBehaviourState.CollectionWaiting;
+        /// <summary>도주 회차 중에는 한도와 유예를 모두 충족하기 전 경찰 회수를 막습니다.</summary>
+        public bool AllowsPoliceRecovery => IsCollectionWaiting || (State == PetBehaviourState.Waiting && !escapeEpisode.Active);
         /// <summary>현재 네트워크 행동 상태입니다.</summary>
         public PetBehaviourState State => state.Value;
         /// <summary>안전 경로 부재를 Inspector/테스트에서 확인할 수 있습니다.</summary>
@@ -52,8 +64,9 @@ namespace EchoZone.Pet
         /// <summary>승인한 목적지입니다.</summary>
         public Vector3 EscapeDestination => escapeDestination;
         /// <summary>클라이언트에서도 사용할 대기 및 체력 조건입니다.</summary>
-        public bool CanBeClaimed => IsSpawned && State == PetBehaviourState.Waiting && stats != null && stats.CurrentHealth > 0 &&
-            !(EchoZone.Heist.HeistWorldGlue.Instance?.IsRetiredPet(PetId) ?? false);
+        public bool CanBeClaimed => IsSpawned && (State == PetBehaviourState.Waiting || IsCollectionWaiting) && stats != null && stats.CurrentHealth > 0 &&
+            !(EchoZone.Heist.HeistWorldGlue.Instance?.IsRetiredPet(PetId) ?? false) &&
+            !(EchoZone.Heist.HeistWorldGlue.Instance?.IsSettlementPet(PetId) ?? false);
 
         /// <summary>같은 펫의 연결을 준비합니다.</summary>
         private void Awake()
@@ -87,6 +100,7 @@ namespace EchoZone.Pet
             ownerPlayerId = EchoZone.Heist.HeistWorldGlue.PlayerIdentity(player.OwnerClientId);
             awaitingOwner = false;
             state.Value = PetBehaviourState.Following;
+            escapeEpisode.Reset();
             stats.SetDamageBlocked(false);
             watchThreats = hasEscapeDestination = false;
             recovery = 0f;
@@ -110,7 +124,8 @@ namespace EchoZone.Pet
         /// <summary>체력 소진 시 도주를 시작합니다. 도주 중에는 반복 피해를 막습니다.</summary>
         public void BeginEscapeServer()
         {
-            if (!IsServer || !IsSpawned || State == PetBehaviourState.Fleeing) return;
+            if (!IsServer || !IsSpawned || config == null || State == PetBehaviourState.Fleeing || IsCollectionWaiting ||
+                !escapeEpisode.TryBegin(config.MaximumEscapeCount, config.ReclaimGraceSeconds, config.EscapeFailureSeconds)) return;
             heist?.CancelServer();
             if (TryGetOwner(out var current)) escapeCenter = current.transform.position;
             else if (!watchThreats) escapeCenter = transform.position;
@@ -131,8 +146,12 @@ namespace EchoZone.Pet
             Transform target = null;
             if (IsServer)
             {
-                if (EchoZone.Heist.HeistWorldGlue.Instance?.IsRetiredPet(PetId) ?? false)
+                if ((EchoZone.Heist.HeistWorldGlue.Instance?.IsRetiredPet(PetId) ?? false) ||
+                    (EchoZone.Heist.HeistWorldGlue.Instance?.IsSettlementPet(PetId) ?? false))
                 { follow.StopServer(); return; }
+                escapeEpisode.Tick(deltaTime, State == PetBehaviourState.Fleeing);
+                if (State == PetBehaviourState.Fleeing && escapeEpisode.Failed)
+                { FinishFailedEscapeServer(); }
                 if (State == PetBehaviourState.Following)
                 {
                     if (awaitingOwner)
@@ -147,7 +166,7 @@ namespace EchoZone.Pet
                     else target = player.transform;
                 }
                 if (State == PetBehaviourState.Fleeing) TickEscape();
-                if (State == PetBehaviourState.Waiting) TickWaiting(deltaTime);
+                if (State == PetBehaviourState.Waiting || IsCollectionWaiting) TickWaiting(deltaTime);
                 heist?.ManualUpdateServer();
                 if (!IsSpawned) return;
                 if (heist != null && heist.IsBusy) target = null;
@@ -184,10 +203,24 @@ namespace EchoZone.Pet
             }
         }
 
+        /// <summary>도주 제한시간이 끝나면 현재 위치 가까운 유효 NavMesh로 보정하고 유예를 유지한 채 대기합니다.</summary>
+        private void FinishFailedEscapeServer()
+        {
+            if (agent != null && agent.enabled && !agent.isOnNavMesh)
+            {
+                var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
+                if (NavMesh.SamplePosition(transform.position, out var hit, config.SampleRadius, filter)) agent.Warp(hit.position);
+            }
+            state.Value = PetBehaviourState.Waiting;
+            hasEscapeDestination = false; stats.SetDamageBlocked(false); follow.StopServer();
+        }
+
         /// <summary>정지 상태에서 소수 회복량을 누적하고 도주 후 은신 위치의 위험을 다시 검사합니다.</summary>
         private void TickWaiting(float deltaTime)
         {
-            if (watchThreats && Time.time >= nextCheck)
+            if (escapeEpisode.CanCollect(config.MaximumEscapeCount))
+            { state.Value = PetBehaviourState.CollectionWaiting; watchThreats = false; follow.StopServer(); }
+            if (!IsCollectionWaiting && !escapeEpisode.Failed && escapeEpisode.Count < config.MaximumEscapeCount && watchThreats && Time.time >= nextCheck)
             {
                 nextCheck = Time.time + Mathf.Max(0.1f, config.RecheckSeconds);
                 planner.RefreshThreats(agent);

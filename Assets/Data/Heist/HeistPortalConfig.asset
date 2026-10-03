@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9575bfa654a71654b89561ce78387bb0, type: 3}
+  m_Name: HeistPortalConfig
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Heist.HeistPortalConfig
+  SharedMaterial: {fileID: 2100000, guid: 71f6edbfee16b8746818e6f86e458bef, type: 2}
+  Scale: {x: 2, y: 0.03, z: 2}
+  HeightOffset: 0.06

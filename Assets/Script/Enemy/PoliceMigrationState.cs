@@ -13,16 +13,19 @@ namespace EchoZone.Enemy
         {
             var site = heistDuty != null ? EchoZone.Heist.HeistWorldGlue.Instance?.Site(heistDuty.InspectionBuildingId) : null;
             return new ActorRecord { id = PoliceId, position = site != null ? site.Entrance : transform.position,
+                hasPursuitPhase = true, pursuitActive = lostPursuit.Active, pursuitArrived = lostPursuit.Arrived,
+                pursuitRemaining = lostPursuit.Remaining, pursuitStuckRemaining = Mathf.Max(0, config.LostTargetStuckSeconds - pursuitStall), lastAim = lastAimPoint,
                 rotation = transform.rotation, health = GetComponent<PlayerStats>().CurrentHealth,
                 kind = (int)equippedWeaponType.Value, station = stationIndex, state = (int)currentState,
                 patrolIndex = patrolBrick.CurrentPointIndex, patrolWaiting = isWaitingAtPatrolPoint,
                 waitRemaining = patrolBrick.RemainingWait(now), target = currentTarget != null ? SessionWorldMigrationGlue.TargetId(currentTarget) : pendingMigrationTarget,
                 identified = targetIdentified, hasLastKnown = perceptionBrick.HasLastKnownPosition,
                 lastKnown = perceptionBrick.LastKnownPosition, detection = perceptionBrick.DetectionProgress,
-                searchRemaining = Mathf.Max(0, searchEndTime - now), fireRemaining = Mathf.Max(0, nextFireTime - now),
+                searchRemaining = lostPursuit.Arrived ? lostPursuit.Remaining : 0, fireRemaining = Mathf.Max(0, nextFireTime - now),
                 orbitRemaining = Mathf.Max(0, nextOrbitSwitchTime - now), orbitSign = orbitSign, burstCount = currentBurstShotCount,
-                pursuingAttacker = pursuingAttacker, attackerRemaining = Mathf.Max(0, attackerPursuitEndTime - now),
+                pursuingAttacker = pursuingAttacker,
                 corpseRemaining = deathGlue != null ? deathGlue.CaptureReturn(now) : -1,
+                weaponDefinitionId = weaponFireGlue != null ? weaponFireGlue.DefinitionId : null,
                 weaponJson = weaponFireGlue != null ? weaponFireGlue.CaptureMigrationWeapon(now) : null };
         }
 
@@ -32,17 +35,31 @@ namespace EchoZone.Enemy
             if (!IsServer) return;
             heistDuty?.CancelServer(); ReleaseDestination(); PoliceId = record.id;
             ConfigureWeaponType((PoliceWeaponType)record.kind);
+            if (weaponFireGlue == null || weaponFireGlue.DefinitionId != record.weaponDefinitionId)
+                throw new System.InvalidOperationException("Police weapon kind/definition mismatch.");
             var stats = GetComponent<PlayerStats>(); stats.SetCurrentValues(record.health, stats.CurrentStamina, stats.CurrentMana);
             patrolBrick.Restore(record.patrolIndex, patrolPoints != null ? patrolPoints.Length : 0, record.waitRemaining, now);
             isWaitingAtPatrolPoint = record.patrolWaiting;
             perceptionBrick.Restore(record.detection, record.hasLastKnown, record.lastKnown);
+            if (record.hasPursuitPhase)
+            {
+                lostPursuit.Restore(record.pursuitActive, record.pursuitArrived, record.pursuitRemaining);
+                pursuitStall = Mathf.Max(0, config.LostTargetStuckSeconds - record.pursuitStuckRemaining);
+                lastAimPoint = record.lastAim;
+            }
+            else
+            {
+                lostPursuit.Reset(); pursuitStall = 0; lastAimPoint = record.lastKnown;
+                if (record.hasLastKnown) RememberGroundPosition(record.lastKnown);
+            }
+            pursuitProgress = record.position;
             targetIdentified = record.identified; currentState = (PoliceEnemyState)record.state;
+            SetPlayerBlockingServer(currentState == PoliceEnemyState.Combat);
             pendingMigrationTarget = record.target; currentTarget = null;
-            searchEndTime = now + record.searchRemaining; nextFireTime = now + record.fireRemaining;
+            nextFireTime = now + record.fireRemaining;
             nextOrbitSwitchTime = now + record.orbitRemaining; orbitSign = record.orbitSign;
             currentBurstShotCount = record.burstCount; pursuingAttacker = record.pursuingAttacker;
-            attackerPursuitEndTime = now + record.attackerRemaining;
-            weaponFireGlue?.RestoreMigrationWeapon(record.weaponJson, now);
+            weaponFireGlue?.RestoreDefinition(record.weaponDefinitionId, record.weaponJson, RecoveryCatalog.Load().Version, now);
             deathGlue?.RestoreReturn(record.corpseRemaining, now);
             SessionWorldMigrationGlue.Place(NetworkObject, record.position, record.rotation);
             ResolveMigrationTarget();

@@ -9,7 +9,10 @@ namespace EchoZone.Pet
         public ActorRecord CaptureMigration()
         {
             var site = heist != null && heist.IsBusy ? EchoZone.Heist.HeistWorldGlue.Instance?.Site(heist.BuildingId) : null;
-            return new ActorRecord { id = PetId, owner = ownerPlayerId, position = site != null ? site.Entrance : transform.position,
+            RecoveryCatalog.Load().Pet(DefinitionId);
+            return new ActorRecord { id = PetId, definitionId = DefinitionId, owner = ownerPlayerId, position = site != null ? site.Entrance : transform.position,
+                hasEscapeEpisode = true, escapeCount = escapeEpisode.Count, escapeGraceRemaining = escapeEpisode.GraceRemaining,
+                escapeFailureRemaining = escapeEpisode.FailureRemaining, escapeFailed = escapeEpisode.Failed,
                 rotation = transform.rotation, health = stats.CurrentHealth, state = (int)State, escapeCenter = escapeCenter,
                 recovery = recovery, watchThreats = watchThreats, cargo = heist != null ? heist.Cargo : 0, grade = heist != null ? heist.Grade : 1 };
         }
@@ -18,11 +21,20 @@ namespace EchoZone.Pet
         public void RestoreMigration(ActorRecord record)
         {
             if (!IsServer || record == null) return;
+            if (record.definitionId != DefinitionId) throw new System.InvalidOperationException("Pet definition mismatch.");
             PetId = record.id;
             heist?.RestoreMigrationCargo(record.cargo, record.grade);
             stats.SetCurrentValues(record.health, stats.CurrentStamina, stats.CurrentMana);
             ownerPlayerId = record.owner; owner.Value = default;
             state.Value = (PetBehaviourState)record.state;
+            if (record.hasEscapeEpisode)
+                escapeEpisode.Restore(record.escapeCount, record.escapeGraceRemaining, record.escapeFailureRemaining, record.escapeFailed);
+            else
+            {
+                escapeEpisode.Reset();
+                if (State == PetBehaviourState.Fleeing || record.watchThreats)
+                    escapeEpisode.TryBegin(config.MaximumEscapeCount, config.ReclaimGraceSeconds, config.EscapeFailureSeconds);
+            }
             awaitingOwner = State == PetBehaviourState.Following && !string.IsNullOrEmpty(ownerPlayerId);
             escapeCenter = record.escapeCenter; recovery = record.recovery; watchThreats = record.watchThreats;
             hasEscapeDestination = false; nextCheck = 0;

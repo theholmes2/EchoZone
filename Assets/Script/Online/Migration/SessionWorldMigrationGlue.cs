@@ -23,6 +23,8 @@ namespace EchoZone.Online.Migration
         private static NetworkManager appliedManager;
         /// <summary>마지막 완료 복원 식별자입니다.</summary>
         private static string appliedKey;
+        /// <summary>현재 Run에서 승인한 콘텐츠 버전입니다. 실행 중 카탈로그 교체를 허용하지 않습니다.</summary>
+        private static int runCatalogVersion;
         /// <summary>늦게 생성될 플레이어의 계정별 상태입니다.</summary>
         private static readonly Dictionary<string, ActorRecord> pendingPlayers = new();
         /// <summary>복구 뒤 아직 재접속하지 않은 계정의 스탯·인벤토리를 다음 체크포인트에도 보존합니다.</summary>
@@ -31,7 +33,7 @@ namespace EchoZone.Online.Migration
         /// <summary>도메인 리로드를 꺼도 이전 실행 상태를 남기지 않습니다.</summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Reset()
-        { IsRestoring = false; appliedManager = null; appliedKey = null; pendingPlayers.Clear(); pendingPlayerStats.Clear(); }
+        { IsRestoring = false; appliedManager = null; appliedKey = null; runCatalogVersion = 0; pendingPlayers.Clear(); pendingPlayerStats.Clear(); }
 
         /// <summary>호스트 선출 이벤트에서 새 서버 AI가 실행되기 전에 장벽을 닫습니다.</summary>
         public static void Begin() { IsRestoring = true; appliedKey = null; }
@@ -52,18 +54,30 @@ namespace EchoZone.Online.Migration
             if (snapshot?.World == null) return;
             var config = ExtractionPoint.Instance?.Config;
             if (config == null && snapshot.World.wallets.Count > 0) throw new InvalidOperationException("Wallet verification config missing.");
-            var connected = new HashSet<string>();
-            foreach (var client in NetworkManager.Singleton.ConnectedClientsList) connected.Add(HeistWorldGlue.PlayerIdentity(client.ClientId));
             var service = new WalletCloudService();
             foreach (var record in snapshot.World.wallets)
             {
-                if (!connected.Contains(record.playerId)) continue;
                 var wallet = WalletSessionBrick.Restore(record.json);
                 if (!wallet.Loaded) continue;
-                var cloud = await service.Load(config, sessionId, record.playerId);
+                var cloud = await service.LoadForRun(config, sessionId, record.playerId, snapshot.RunId);
+                if (cloud.Recoveries.Exists(r => r.RunId == snapshot.RunId && r.State != "CheckpointConfirmed"))
+                    throw new InvalidOperationException("Recovery journal is newer than checkpoint; manual reconciliation required.");
+                if (cloud.Pending?.State == "Conflict") throw new InvalidOperationException("Pending wallet conflict; manual reconciliation required.");
+                ValidateSettlementReceipt(wallet, cloud);
                 wallet.VerifyCloud(cloud.Balance, cloud.Revision, cloud.LastSettlementId);
                 record.json = wallet.Export();
             }
+        }
+
+        /// <summary>같은 정산 ID라도 대상 펫·원장이 바뀐 복사본은 적용하지 않습니다.</summary>
+        public static void ValidateSettlementReceipt(WalletSessionBrick wallet, WalletCloudRecord cloud)
+        {
+            if (wallet.Request == null) return;
+            var receipt = cloud.Receipts.Find(r => r.Request.SettlementId == wallet.SettlementId);
+            if (receipt != null && !receipt.Request.SamePayload(wallet.Request))
+                throw new InvalidOperationException("Settlement target mismatch; manual reconciliation required.");
+            if (cloud.LastSettlementId == wallet.SettlementId && receipt == null)
+                throw new InvalidOperationException("Settlement receipt missing; manual reconciliation required.");
         }
 
         /// <summary>현재 월드의 각 기존 컴포넌트에서 확장 상태를 모읍니다.</summary>
@@ -73,6 +87,10 @@ namespace EchoZone.Online.Migration
             if (world == null || !world.IsServer || IsRestoring) return null;
             float now = (float)NetworkManager.Singleton.ServerTime.Time;
             var snapshot = world.CaptureMigration(runId, now);
+            var catalog = RecoveryCatalog.Load();
+            if (runCatalogVersion == 0) runCatalogVersion = catalog.Version;
+            catalog.RequireVersion(runCatalogVersion);
+            snapshot.catalogVersion = runCatalogVersion;
             foreach (var pet in PetUpdateManager.Pets) if (pet != null && pet.IsSpawned) snapshot.pets.Add(pet.CaptureMigration());
             foreach (var police in Object.FindObjectsByType<PoliceEnemyBrainGlue>(FindObjectsSortMode.None))
                 if (police.IsSpawned) snapshot.police.Add(police.CaptureMigration(now));
@@ -81,6 +99,7 @@ namespace EchoZone.Online.Migration
                 var obj = client.PlayerObject; if (obj == null) continue;
                 snapshot.players.Add(new ActorRecord { id = HeistWorldGlue.PlayerIdentity(client.ClientId),
                     position = obj.transform.position, rotation = obj.transform.rotation,
+                    weaponDefinitionId = obj.GetComponent<NetworkWeaponFireGlue>()?.DefinitionId,
                     weaponJson = obj.GetComponent<NetworkWeaponFireGlue>()?.CaptureMigrationWeapon(now),
                     respawnRemaining = obj.GetComponent<PlayerDeathGlue>()?.CaptureRespawn(now) ?? -1 });
             }
@@ -102,10 +121,14 @@ namespace EchoZone.Online.Migration
             if (world == null || !world.IsSpawned) throw new InvalidOperationException("Heist world is not ready for migration.");
             var data = JsonUtility.FromJson<SessionWorldSnapshot>(JsonUtility.ToJson(snapshot.World));
             SessionWorldSnapshotValidator.Validate(data);
+            var catalog = RecoveryCatalog.Load(); catalog.RequireVersion(data.catalogVersion);
+            runCatalogVersion = data.catalogVersion;
+            foreach (var record in data.pets)
+                if (!manager.NetworkConfig.Prefabs.Contains(catalog.Pet(record.definitionId).Prefab.gameObject))
+                    throw new InvalidOperationException("Recovery pet prefab is not registered with NGO.");
+            foreach (var record in data.players) catalog.Weapon(record.weaponDefinitionId);
+            foreach (var record in data.police) catalog.Weapon(record.weaponDefinitionId);
             SeparateRestorePositions(data, world.Config);
-            var playerPrefab = manager.NetworkConfig.PlayerPrefab.GetComponent<PlayerPetGlue>();
-            if (data.pets.Count > 0 && (playerPrefab == null || playerPrefab.PetPrefab == null))
-                throw new InvalidOperationException("Migration pet prefab is missing.");
             foreach (var pet in new List<PetStateGlue>(PetUpdateManager.Pets))
                 if (pet != null && pet.IsSpawned) pet.NetworkObject.Despawn(true);
             float now = (float)manager.ServerTime.Time;
@@ -117,7 +140,7 @@ namespace EchoZone.Online.Migration
             foreach (var record in data.pets)
             {
                 if (world.IsRetiredPet(record.id)) continue;
-                var follow = Object.Instantiate(playerPrefab.PetPrefab, record.position, record.rotation);
+                var follow = Object.Instantiate(catalog.Pet(record.definitionId).Prefab, record.position, record.rotation);
                 follow.NetworkObject.Spawn();
                 follow.GetComponent<PetStateGlue>().RestoreMigration(record);
                 follow.GetComponent<PetHeistGlue>()?.SetReportedServer(world.IsReportedPet(record.id));
@@ -145,7 +168,7 @@ namespace EchoZone.Online.Migration
                 if (!pendingPlayers.TryGetValue(id, out var record)) continue;
                 Place(obj, record.position, record.rotation);
                 float now = (float)manager.ServerTime.Time;
-                obj.GetComponent<NetworkWeaponFireGlue>()?.RestoreMigrationWeapon(record.weaponJson, now);
+                obj.GetComponent<NetworkWeaponFireGlue>()?.RestoreDefinition(record.weaponDefinitionId, record.weaponJson, RecoveryCatalog.Load().Version, now);
                 obj.GetComponent<PlayerDeathGlue>()?.RestoreRespawn(record.respawnRemaining, now);
                 pendingPlayers.Remove(id);
                 pendingPlayerStats.Remove(id);

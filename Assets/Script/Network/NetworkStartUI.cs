@@ -1,147 +1,140 @@
 using EchoZone.Online.Relay;
-using EchoZone.Online.Migration;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
-/// <summary>
-/// Host, Client, 전용 Server를 시작하고 현재 네트워크 실행 상태를 표시하는 테스트용 UI입니다.
-/// </summary>
-public class NetworkStartUI : MonoBehaviour
+/// <summary>Canvas 타이틀 화면의 방 생성·코드 참가·종료 입력을 Relay Session 흐름에 연결합니다.</summary>
+public sealed class NetworkStartUI : MonoBehaviour
 {
     [SerializeField] private RelaySessionGlue relaySessionGlue;
-    [SerializeField] private HostMigrationCloudCheckpointGlue cloudCheckpointGlue;
+    [SerializeField] private GameObject titleCanvas;
+    [SerializeField] private GameObject mainMenuPanel;
+    [SerializeField] private GameObject joinMenuPanel;
+    [SerializeField] private GameObject statusPanel;
+    [SerializeField] private Button createRoomButton;
+    [SerializeField] private Button showJoinButton;
+    [SerializeField] private Button quitButton;
+    [SerializeField] private Button joinRoomButton;
+    [SerializeField] private Button joinBackButton;
+    [SerializeField] private TMP_InputField joinCodeInput;
+    [SerializeField] private TMP_Text statusText;
 
-    /// <summary>Client가 참가할 Relay Session의 Join Code 입력값입니다.</summary>
-    private string joinCode = string.Empty;
+    /// <summary>중복 생성·참가 요청을 막는 현재 비동기 작업 상태입니다.</summary>
+    private bool requestPending;
 
-    /// <summary>네트워크 상태에 따라 시작 버튼 또는 현재 실행 모드를 표시합니다.</summary>
-    private void OnGUI()
+    /// <summary>Canvas 버튼 이벤트를 네트워크 명령에 연결하고 첫 메뉴를 표시합니다.</summary>
+    private void Awake()
     {
-        if (NetworkManager.Singleton == null)
-        {
-            return;
-        }
-
-        if (relaySessionGlue != null &&
-            (relaySessionGlue.IsReconnecting || relaySessionGlue.IsMigratingHost))
-        {
-            DrawMigrationStatus();
-            return;
-        }
-
-        if (!NetworkManager.Singleton.IsClient &&
-            !NetworkManager.Singleton.IsServer)
-        {
-            DrawStartButtons();
-            return;
-        }
-
-        DrawNetworkStatus();
+        createRoomButton?.onClick.AddListener(CreateRoom);
+        showJoinButton?.onClick.AddListener(ShowJoinMenu);
+        quitButton?.onClick.AddListener(QuitGame);
+        joinRoomButton?.onClick.AddListener(JoinRoom);
+        joinBackButton?.onClick.AddListener(ShowMainMenu);
+        joinCodeInput?.onValueChanged.AddListener(HandleJoinCodeChanged);
+        ShowMainMenu();
     }
 
-    /// <summary>Host, Client, 전용 Server를 시작할 수 있는 버튼을 표시합니다.</summary>
-    private void DrawStartButtons()
+    /// <summary>등록한 버튼과 입력 이벤트를 제거합니다.</summary>
+    private void OnDestroy()
     {
-        if (GUI.Button(new Rect(20, 20, 150, 40), "Start Host"))
-        {
-            if (relaySessionGlue != null)
-            {
-                _ = relaySessionGlue.CreateHostSessionAsync();
-            }
-        }
-
-        if (GUI.Button(new Rect(20, 70, 150, 40), "Start Client"))
-        {
-            if (relaySessionGlue != null)
-            {
-                _ = relaySessionGlue.JoinSessionAsync(joinCode);
-            }
-        }
-
-        joinCode = GUI.TextField(
-            new Rect(180, 70, 150, 40),
-            joinCode,
-            12);
-
-        if (GUI.Button(new Rect(20, 120, 150, 40), "Start Server"))
-        {
-            NetworkManager.Singleton.StartServer();
-        }
+        createRoomButton?.onClick.RemoveListener(CreateRoom);
+        showJoinButton?.onClick.RemoveListener(ShowJoinMenu);
+        quitButton?.onClick.RemoveListener(QuitGame);
+        joinRoomButton?.onClick.RemoveListener(JoinRoom);
+        joinBackButton?.onClick.RemoveListener(ShowMainMenu);
+        joinCodeInput?.onValueChanged.RemoveListener(HandleJoinCodeChanged);
     }
 
-    /// <summary>현재 실행 중인 네트워크 모드를 화면에 표시합니다.</summary>
-    private void DrawNetworkStatus()
+    /// <summary>연결·복구 상태에 맞춰 타이틀 메뉴와 상태 카드를 전환합니다.</summary>
+    private void Update()
     {
-        string mode;
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null || titleCanvas == null) return;
+        bool recovering = relaySessionGlue != null &&
+            (relaySessionGlue.IsReconnecting || relaySessionGlue.IsMigratingHost);
+        bool connected = manager.IsClient || manager.IsServer;
+        statusPanel?.SetActive(recovering || connected || requestPending);
+        if (mainMenuPanel != null && (recovering || connected)) mainMenuPanel.SetActive(false);
+        if (joinMenuPanel != null && (recovering || connected)) joinMenuPanel.SetActive(false);
 
-        if (NetworkManager.Singleton.IsHost)
-        {
-            mode = "Host";
-        }
-        else if (NetworkManager.Singleton.IsServer)
-        {
-            mode = "Server";
-        }
-        else
-        {
-            mode = "Client";
-        }
-
-        GUI.Label(new Rect(20, 20, 200, 30), $"Mode: {mode}");
-
-        if (NetworkManager.Singleton.IsHost &&
-            relaySessionGlue != null &&
-            !string.IsNullOrEmpty(relaySessionGlue.JoinCode))
-        {
-            GUI.Label(
-                new Rect(20, 50, 250, 30),
-                $"Join Code: {relaySessionGlue.JoinCode}");
-
-            if (cloudCheckpointGlue != null &&
-                GUI.Button(new Rect(20, 90, 190, 40), "Save Cloud Snapshot"))
-            {
-                _ = cloudCheckpointGlue.SaveCurrentCheckpointAsync();
-            }
-
-            if (GUI.Button(new Rect(20, 140, 190, 40), "Test Host Migration"))
-            {
-                _ = relaySessionGlue.ForceHostExitForMigrationTestAsync();
-            }
-        }
-
-        if (NetworkManager.Singleton.IsClient &&
-            !NetworkManager.Singleton.IsHost &&
-            relaySessionGlue != null &&
-            GUI.Button(new Rect(20, 50, 190, 40), "Test Disconnect"))
-        {
-            relaySessionGlue.ForceClientDisconnectForTest();
-        }
-
-        if (NetworkManager.Singleton.IsClient &&
-            !NetworkManager.Singleton.IsHost &&
-            relaySessionGlue != null &&
-            GUI.Button(new Rect(20, 100, 190, 40), "Test Invalid Ticket"))
-        {
-            relaySessionGlue.ForceClientDisconnectWithInvalidTicketForTest();
-        }
-
-        if (NetworkManager.Singleton.IsClient &&
-            !NetworkManager.Singleton.IsHost &&
-            cloudCheckpointGlue != null &&
-            GUI.Button(new Rect(20, 150, 220, 40), "Test Cloud Host Permission"))
-        {
-            _ = cloudCheckpointGlue.TestUnauthorizedClientSaveAsync();
-        }
+        if (statusText == null) return;
+        if (recovering)
+            statusText.text = string.IsNullOrWhiteSpace(relaySessionGlue.RecoveryStatus)
+                ? "세션을 복구하는 중입니다..." : relaySessionGlue.RecoveryStatus;
+        else if (manager.IsHost)
+            statusText.text = $"방 생성 완료\n참가 코드  {relaySessionGlue?.JoinCode}";
+        else if (manager.IsClient)
+            statusText.text = "방에 참가했습니다";
+        else if (requestPending)
+            statusText.text = "연결하는 중입니다...";
     }
 
-    /// <summary>자동 재접속이 진행 중임을 화면에 표시합니다.</summary>
-    private void DrawMigrationStatus()
+    /// <summary>방 생성·참가·종료 버튼이 있는 첫 화면을 표시합니다.</summary>
+    private void ShowMainMenu()
     {
-        GUI.Box(new Rect(0, 0, Screen.width, Screen.height), string.Empty);
-        GUI.Label(
-            new Rect(20, 20, Screen.width - 40, 60),
-            relaySessionGlue != null && !string.IsNullOrEmpty(relaySessionGlue.RecoveryStatus)
-                ? relaySessionGlue.RecoveryStatus
-                : "Relay reconnecting...");
+        mainMenuPanel?.SetActive(true);
+        joinMenuPanel?.SetActive(false);
+        statusPanel?.SetActive(false);
+    }
+
+    /// <summary>참가 코드 입력 화면을 표시하고 입력창에 포커스를 줍니다.</summary>
+    private void ShowJoinMenu()
+    {
+        mainMenuPanel?.SetActive(false);
+        joinMenuPanel?.SetActive(true);
+        statusPanel?.SetActive(false);
+        joinCodeInput?.ActivateInputField();
+        HandleJoinCodeChanged(joinCodeInput != null ? joinCodeInput.text : string.Empty);
+    }
+
+    /// <summary>새 Relay 방과 Host를 생성합니다.</summary>
+    private async void CreateRoom()
+    {
+        if (requestPending || relaySessionGlue == null) return;
+        requestPending = true; SetButtonsInteractable(false);
+        bool succeeded = await relaySessionGlue.CreateHostSessionAsync();
+        requestPending = false;
+        if (!succeeded) ShowMainMenu();
+        SetButtonsInteractable(true);
+    }
+
+    /// <summary>입력한 참가 코드로 Relay 방에 Client로 접속합니다.</summary>
+    private async void JoinRoom()
+    {
+        string code = joinCodeInput != null ? joinCodeInput.text.Trim() : string.Empty;
+        if (requestPending || relaySessionGlue == null || string.IsNullOrEmpty(code)) return;
+        requestPending = true; SetButtonsInteractable(false);
+        bool succeeded = await relaySessionGlue.JoinSessionAsync(code);
+        requestPending = false;
+        if (!succeeded) ShowJoinMenu();
+        SetButtonsInteractable(true);
+    }
+
+    /// <summary>참가 코드 유무에 따라 참가 확인 버튼을 활성화합니다.</summary>
+    private void HandleJoinCodeChanged(string value)
+    {
+        if (joinRoomButton != null)
+            joinRoomButton.interactable = !requestPending && !string.IsNullOrWhiteSpace(value);
+    }
+
+    /// <summary>비동기 요청 중 메뉴 버튼의 중복 입력을 막습니다.</summary>
+    private void SetButtonsInteractable(bool interactable)
+    {
+        if (createRoomButton != null) createRoomButton.interactable = interactable;
+        if (showJoinButton != null) showJoinButton.interactable = interactable;
+        if (quitButton != null) quitButton.interactable = interactable;
+        if (joinBackButton != null) joinBackButton.interactable = interactable;
+        HandleJoinCodeChanged(joinCodeInput != null ? joinCodeInput.text : string.Empty);
+    }
+
+    /// <summary>빌드에서는 게임을 종료하고 Editor에서는 Play Mode를 종료합니다.</summary>
+    private static void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine.AI;
 
 namespace EchoZone.Pet
 {
-    /// <summary>현재 경찰·순찰 NavMesh 경로와 순수 원 후보 계산을 연결하는 서버 도주 계획기입니다.</summary>
+    /// <summary>현재 살아 있는 경찰의 위험 반경과 순수 원 후보 계산을 연결하는 서버 도주 계획기입니다.</summary>
     public sealed class PetEscapePlanner : MonoBehaviour
     {
         /// <summary>도주 탐색 설정입니다.</summary>
@@ -14,13 +14,11 @@ namespace EchoZone.Pet
         private readonly List<PetDangerZone> zones = new();
         /// <summary>후보 검사에 재사용하는 경로입니다.</summary>
         private NavMeshPath path;
-        /// <summary>순찰 경로 계산에 재사용하는 경로입니다.</summary>
-        private NavMeshPath patrolPath;
         /// <summary>마지막 위험 목록 갱신 시각입니다.</summary>
         private float refreshedAt = float.NegativeInfinity;
 
         /// <summary>Unity 네이티브 경로 객체는 메인 스레드에서 준비합니다.</summary>
-        private void Awake() { path = new NavMeshPath(); patrolPath = new NavMeshPath(); }
+        private void Awake() { path = new NavMeshPath(); }
 
         /// <summary>동일 검사 주기에서는 위험 목록을 재사용합니다.</summary>
         public void RefreshThreats(NavMeshAgent agent)
@@ -28,39 +26,11 @@ namespace EchoZone.Pet
             if (Time.time - refreshedAt < Mathf.Max(0.1f, config.RecheckSeconds)) return;
             refreshedAt = Time.time;
             zones.Clear();
-            foreach (var station in FindObjectsByType<EnemySpawnManager>(FindObjectsSortMode.None))
-            {
-                float radius = station.PoliceSightDistance + config.PoliceMargin;
-                foreach (var route in station.PatrolRoutes) AddRoute(route, radius, agent);
-                foreach (var point in station.PoliceSpawnPoints) zones.Add(new PetDangerZone(point.position, point.position, radius));
-            }
             foreach (var police in FindObjectsByType<PoliceEnemyBrainGlue>(FindObjectsSortMode.None))
             {
                 if (!police.IsSpawned || (police.TryGetComponent<PlayerStats>(out var stats) && stats.IsDead)) continue;
                 float radius = police.SightDistance + config.PoliceMargin;
                 zones.Add(new PetDangerZone(police.transform.position, police.transform.position, radius));
-                AddRoute(police.PatrolPoints, radius, agent);
-            }
-        }
-
-        /// <summary>순찰점 사이 실제 NavMesh 코너를 위험 구간으로 등록하며 닫힌 순환도 포함합니다.</summary>
-        private void AddRoute(IReadOnlyList<Transform> route, float radius, NavMeshAgent agent)
-        {
-            if (route == null) return;
-            for (int i = 0; i < route.Count; i++)
-            {
-                if (route[i] == null) continue;
-                Vector3 a = route[i].position;
-                zones.Add(new PetDangerZone(a, a, radius));
-                var next = route[(i + 1) % route.Count];
-                if (next == null) continue;
-                var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
-                if (NavMesh.CalculatePath(a, next.position, filter, patrolPath) && patrolPath.status == NavMeshPathStatus.PathComplete)
-                {
-                    var corners = patrolPath.corners;
-                    for (int j = 1; j < corners.Length; j++) zones.Add(new PetDangerZone(corners[j - 1], corners[j], radius));
-                }
-                else zones.Add(new PetDangerZone(a, next.position, radius));
             }
         }
 

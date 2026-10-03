@@ -39,10 +39,21 @@ namespace EchoZone.Combat.Glue
 
         /// <summary>탄약·쿨타임·재장전 규칙을 담당하는 순수 Brick입니다.</summary>
         private readonly WeaponFireBrick weaponFireBrick = new();
+        /// <summary>후발 접속자에게도 정확한 무기 외형을 전달하는 서버 권위 종류 ID입니다.</summary>
+        private readonly NetworkVariable<Unity.Collections.FixedString128Bytes> equippedDefinition = new();
+        /// <summary>Snapshot에 저장할 종류 ID입니다. 오브젝트 이름은 사용하지 않습니다.</summary>
+        public string DefinitionId => RecoveryCatalog.Load().WeaponId(config);
+        /// <summary>카탈로그 설정을 먼저 복원한 뒤 탄약/잔여시간을 적용합니다.</summary>
+        public void RestoreDefinition(string id, string json, int version, float now)
+        {
+            if (!IsServer) return;
+            if (string.IsNullOrWhiteSpace(json)) throw new InvalidOperationException("Weapon state missing.");
+            var catalog = RecoveryCatalog.Load(); catalog.RequireVersion(version);
+            ConfigureWeapon(catalog.Weapon(id).Config);
+            weaponFireBrick.Restore(json, now);
+        }
         /// <summary>서버 총기 규칙 복사본을 반환합니다.</summary>
         public string CaptureMigrationWeapon(float now) => weaponFireBrick.Export(now);
-        /// <summary>서버 총기 규칙을 복원합니다.</summary>
-        public void RestoreMigrationWeapon(string json, float now) { if (IsServer) weaponFireBrick.Restore(json, now); }
         /// <summary>서버가 탄퍼짐을 계산할 때 사용하는 순수 Brick입니다.</summary>
         private readonly AimDirectionBrick aimDirectionBrick = new();
         /// <summary>자동사격 중 불필요한 매 프레임 RPC를 막는 다음 로컬 요청 시각입니다.</summary>
@@ -97,6 +108,9 @@ namespace EchoZone.Combat.Glue
         /// <summary>장착 총기 Config를 교체하고 발사 규칙과 외형을 함께 다시 구성합니다.</summary>
         public void ConfigureWeapon(WeaponFireConfig weaponConfig)
         {
+            if (weaponConfig == null) throw new InvalidOperationException("Weapon config missing.");
+            string definition = RecoveryCatalog.Load().WeaponId(weaponConfig);
+            if (IsServer && IsSpawned) equippedDefinition.Value = new Unity.Collections.FixedString128Bytes(definition);
             if (weaponConfig == null || config == weaponConfig)
             {
                 return;
@@ -114,11 +128,23 @@ namespace EchoZone.Combat.Glue
         /// <summary>OnNetworkSpawn 작업을 수행합니다.</summary>
         public override void OnNetworkSpawn()
         {
+            equippedDefinition.OnValueChanged += HandleDefinitionChanged;
             nextLocalFireRequestTime = 0f;
             if (IsServer)
             {
+                equippedDefinition.Value = new Unity.Collections.FixedString128Bytes(DefinitionId);
                 weaponFireBrick.Configure(config);
             }
+            else if (!equippedDefinition.Value.IsEmpty) HandleDefinitionChanged(default, equippedDefinition.Value);
+        }
+
+        /// <summary>풀 재사용/디스폰 때 종류 변경 구독을 해제합니다.</summary>
+        public override void OnNetworkDespawn() => equippedDefinition.OnValueChanged -= HandleDefinitionChanged;
+
+        /// <summary>클라이언트는 서버 종류 ID로 외형과 로컬 요청 간격을 맞춥니다.</summary>
+        private void HandleDefinitionChanged(Unity.Collections.FixedString128Bytes previous, Unity.Collections.FixedString128Bytes current)
+        {
+            if (!IsServer && !current.IsEmpty) ConfigureWeapon(RecoveryCatalog.Load().Weapon(current.ToString()).Config);
         }
 
         /// <summary>서버 부활 시 장착 총은 유지하고 탄창·쿨타임·재장전을 초기화합니다.</summary>

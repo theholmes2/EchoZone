@@ -133,11 +133,14 @@ namespace EchoZone.Online.Reconnect
                     slot.Quantity));
             }
 
+            var weapon = GetComponent<EchoZone.Combat.Glue.NetworkWeaponFireGlue>();
             return new PlayerSessionSnapshot(
                 cachedSlots,
                 playerStats.CurrentHealth,
                 playerStats.CurrentStamina,
-                playerStats.CurrentMana);
+                playerStats.CurrentMana) { CatalogVersion = RecoveryCatalog.Load().Version,
+                    WeaponDefinitionId = weapon != null ? weapon.DefinitionId : null,
+                    WeaponJson = weapon != null ? weapon.CaptureMigrationWeapon((float)NetworkManager.ServerTime.Time) : null };
         }
 
         /// <summary>Host Migration Snapshot을 이미 Spawn된 서버 PlayerObject에 적용합니다.</summary>
@@ -155,6 +158,10 @@ namespace EchoZone.Online.Reconnect
         /// <summary>캐시의 원시 데이터를 현재 서버 PlayerObject의 Brick에 복원합니다.</summary>
         private void ApplySnapshot(PlayerSessionSnapshot snapshot, ItemCatalog itemCatalog)
         {
+            // 마이그레이션의 기본 스탯 DTO는 별도 ActorRecord에서 무기를 복원합니다.
+            if (snapshot.CatalogVersion != 0 || !string.IsNullOrEmpty(snapshot.WeaponDefinitionId))
+                GetComponent<EchoZone.Combat.Glue.NetworkWeaponFireGlue>()?.RestoreDefinition(
+                    snapshot.WeaponDefinitionId, snapshot.WeaponJson, snapshot.CatalogVersion, (float)NetworkManager.ServerTime.Time);
             if (inventory == null || playerStats == null || itemCatalog == null)
             {
                 return;

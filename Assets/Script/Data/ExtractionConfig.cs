@@ -12,6 +12,12 @@ namespace EchoZone.Heist
         public string LoadFunction = "LoadWallet";
         /// <summary>서버 승인 탈출 저장 함수입니다.</summary>
         public string SettleFunction = "SettleEscape";
+        /// <summary>고정 요청을 잔액 변경 전에 영속화하는 Cloud 함수입니다.</summary>
+        public string PrepareFunction = "PrepareEscape";
+        /// <summary>Cloud Run에 기록된 미접속 계정까지 검사할 함수입니다.</summary>
+        public string RecoveryFunction = "LoadRunWallet";
+        /// <summary>지수 백오프의 최대 재시도 간격입니다.</summary>
+        [Min(1f)] public float MaximumRetrySeconds = 60f;
         /// <summary>플레이어가 머물러야 할 탈출 지점 반경입니다.</summary>
         [Min(0.5f)] public float PlayerRadius = 2f;
         /// <summary>함께 탈출할 소유 펫이 지점에서 떨어질 수 있는 최대 거리입니다.</summary>

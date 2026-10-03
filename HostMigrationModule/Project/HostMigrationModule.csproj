@@ -7,6 +7,8 @@
     <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../Assets/Script/Heist/SettlementJournalBrick.cs" Link="SettlementJournalBrick.cs" />
+    <Compile Include="../../Assets/Script/Heist/WalletPreparation.cs" Link="WalletPreparation.cs" />
     <PackageReference Include="Com.Unity.Services.CloudCode.Apis" Version="1.0.2-alpha" />
     <PackageReference Include="Com.Unity.Services.CloudCode.Core" Version="0.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />

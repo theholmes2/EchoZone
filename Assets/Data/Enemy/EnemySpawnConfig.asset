@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95c28155e03d4132bc1b3c127044ed9b, type: 3}
   m_Name: EnemySpawnConfig
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Enemy.EnemySpawnConfig
-  initialSpawnCount: 13
-  maximumAliveCount: 13
+  DistrictTargets: 0a0000000a0000000a0000000a000000
+  initialSpawnCount: 40
+  maximumAliveCount: 40
   spawnIntervalSeconds: 10
   minimumPlayerDistance: 8

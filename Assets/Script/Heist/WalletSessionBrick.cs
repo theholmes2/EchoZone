@@ -17,6 +17,25 @@ namespace EchoZone.Heist
         public bool Settled { get; private set; }
         /// <summary>매 탈출마다 생성하고 재시도에는 유지하는 정산 식별자입니다.</summary>
         public string SettlementId { get; private set; } = string.Empty;
+        /// <summary>재시도와 마이그레이션에 그대로 쓰는 최초 승인 요청입니다.</summary>
+        public SettlementRequest Request { get; private set; }
+        /// <summary>Cloud 성공 후 월드의 펫/원장 종료까지 적용한 상태입니다.</summary>
+        public bool Finalized { get; private set; }
+        /// <summary>확정된 정산만 새 입장 지갑으로 교체할 수 있도록 월드 적용을 기록합니다.</summary>
+        public void MarkFinalized()
+        {
+            if (!Settled) throw new InvalidOperationException("Settlement is not confirmed.");
+            Finalized = true;
+        }
+
+        /// <summary>정산 대상 펫·원장을 포함한 본문을 한 번 연결합니다.</summary>
+        public void BindRequest(SettlementRequest request)
+        {
+            request.Validate();
+            if (!Escaping || request.SettlementId != SettlementId || request.Balance != Balance || request.ExpectedRevision != Revision ||
+                (Request != null && !Request.SamePayload(request))) throw new InvalidOperationException("Settlement payload conflict.");
+            Request = request;
+        }
         /// <summary>지갑 로드 전에 발생한 서버 보상은 잃지 않고 누적합니다.</summary>
         private long pendingCredit;
 
@@ -72,21 +91,23 @@ namespace EchoZone.Heist
         }
         /// <summary>로드 전 보상까지 포함한 지갑 복사본입니다.</summary>
         public string Export() => Newtonsoft.Json.JsonConvert.SerializeObject(new State { loaded = Loaded, balance = Balance,
-            revision = Revision, escaping = Escaping, settled = Settled, settlementId = SettlementId, pendingCredit = pendingCredit });
+            revision = Revision, escaping = Escaping, settled = Settled, settlementId = SettlementId, pendingCredit = pendingCredit, request = Request, finalized = Finalized });
         /// <summary>같은 세션 지갑을 새 호스트에서 복원합니다.</summary>
         public static WalletSessionBrick Restore(string json)
         {
             var s = Newtonsoft.Json.JsonConvert.DeserializeObject<State>(json);
             if (s == null || s.balance < 0 || s.revision < 0 || s.pendingCredit < 0) throw new InvalidOperationException("Invalid migration wallet");
             return new WalletSessionBrick { Loaded = s.loaded, Balance = s.balance, Revision = s.revision, Escaping = s.escaping,
-                Settled = s.settled, SettlementId = s.settlementId, pendingCredit = s.pendingCredit };
+                Settled = s.settled, SettlementId = s.settlementId, pendingCredit = s.pendingCredit, Request = s.request, Finalized = s.finalized };
         }
         /// <summary>지갑의 명시적 직렬화 필드입니다.</summary>
         private sealed class State
         {
-            public bool loaded, escaping, settled;
+            public bool loaded, escaping, settled, finalized;
             public long balance, revision, pendingCredit;
             public string settlementId;
+            /// <summary>구형 지갑에는 없는 승인 본문입니다. 누락 시 임의로 새 본문을 만들지 않습니다.</summary>
+            public SettlementRequest request;
         }
     }
 }

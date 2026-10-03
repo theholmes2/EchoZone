@@ -6,6 +6,11 @@ namespace EchoZone.Enemy
     [CreateAssetMenu(fileName = "EnemySpawnConfig", menuName = "EchoZone/Enemy/Enemy Spawn Config")]
     public sealed class EnemySpawnConfig : ScriptableObject
     {
+        /// <summary>경찰서 순서별 고정 목표입니다. 미지정 구역은 기존 씬 값을 사용합니다.</summary>
+        public int[] DistrictTargets = { 10, 10, 10, 10 };
+        /// <summary>매 프레임 밀도에 따라 변하지 않는 구역별 목표를 반환합니다.</summary>
+        public int TargetFor(int district, int fallback) => DistrictTargets != null && district >= 0 && district < DistrictTargets.Length
+            ? Mathf.Max(0, DistrictTargets[district]) : Mathf.Max(0, fallback);
         /// <summary>세션 시작 시 우선 생성할 경찰 수입니다.</summary>
         [SerializeField, Min(0)] private int initialSpawnCount = 1;
         /// <summary>동시에 살아 있을 수 있는 최대 경찰 수입니다.</summary>

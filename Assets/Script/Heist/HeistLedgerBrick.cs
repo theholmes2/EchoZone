@@ -66,6 +66,13 @@ namespace EchoZone.Heist
         public int Cargo(ulong pet) => Cargo(pet.ToString());
         /// <summary>고정 펫 ID의 미정산 금액입니다.</summary>
         public int Cargo(string pet) { int total = 0; foreach (var e in entries) if (e.Pet == pet && !e.Extracted) total += e.Amount; return total; }
+        /// <summary>승인 요청에 고정할 미정산 장물 ID 목록을 복사합니다.</summary>
+        public string[] EntryIds(ISet<string> pets)
+        {
+            var ids = new List<string>();
+            foreach (var e in entries) if (pets.Contains(e.Pet) && !e.Extracted) ids.Add(e.Id);
+            ids.Sort(StringComparer.Ordinal); return ids.ToArray();
+        }
         /// <summary>탈출한 돈은 다시 반환·신고할 수 없지만, 건물 검사에서 도난을 발견할 기록은 남깁니다.</summary>
         public int Extract(ulong pet)
             => Extract(pet.ToString());

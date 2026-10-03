@@ -336,6 +336,7 @@ namespace EchoZone.Online.Relay
                     return false;
                 }
 
+                if (!await EnsureWalletBeforeAdmissionAsync()) return false;
                 if (!await PrepareManualConnectionAsync())
                 {
                     return false;
@@ -419,6 +420,7 @@ namespace EchoZone.Online.Relay
                     return false;
                 }
 
+                if (!await EnsureWalletBeforeAdmissionAsync()) return false;
                 if (!await PrepareManualConnectionAsync())
                 {
                     return false;
@@ -675,6 +677,34 @@ namespace EchoZone.Online.Relay
 
         /// <summary>클라우드 정산 성공 후 명시적으로 퇴장하며 자동 재접속 플래그도 정리합니다.</summary>
         public Task<bool> LeaveAfterEscapeAsync() => PrepareManualConnectionAsync();
+
+        /// <summary>지갑 준비 중복 요청과 실패 후 수동 재시도 간격을 관리합니다. 자동 복구에는 적용하지 않습니다.</summary>
+        private readonly EchoZone.Heist.WalletAdmissionGate walletAdmission = new();
+
+        /// <summary>인증 후·기존 방 정리 전에 지갑을 확인합니다. 확인 실패 시 새 방 생성/입장을 진행하지 않습니다.</summary>
+        private async Task<bool> EnsureWalletBeforeAdmissionAsync()
+        {
+            if (!walletAdmission.TryBegin(Time.realtimeSinceStartupAsDouble)) return false;
+            bool success = false;
+            RecoveryStatus = "입장 전 지갑 확인 중";
+            try
+            {
+                await new EchoZone.Heist.WalletCloudService().EnsureOwn(config);
+                RecoveryStatus = string.Empty;
+                success = true;
+                return true;
+            }
+            catch (System.Exception exception)
+            {
+                RecoveryStatus = "지갑 확인 실패 · 잠시 후 다시 입장하세요";
+                Debug.LogWarning($"Wallet admission failed: {exception.Message}", this);
+                return false;
+            }
+            finally
+            {
+                walletAdmission.Complete(success, Time.realtimeSinceStartupAsDouble, config.WalletAdmissionRetrySeconds);
+            }
+        }
 
         /// <summary>수동 참가/생성 전에 이전 Session과 NGO 연결을 순서대로 정리합니다.</summary>
         private async Task<bool> PrepareManualConnectionAsync()

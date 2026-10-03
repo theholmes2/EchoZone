@@ -7,6 +7,8 @@ namespace EchoZone.Online.Migration
     /// <summary>고정 ID와 남은 시간으로 저장하는 확장 월드 데이터입니다.</summary>
     [Serializable] public sealed class SessionWorldSnapshot
     {
+        /// <summary>종류 정의/설정의 콘텐츠 버전입니다. 0인 구형 월드는 명시적 변환 없이 복원하지 않습니다.</summary>
+        public int catalogVersion;
         /// <summary>분기하지 않고 이어받을 월드 식별자입니다.</summary>
         public string worldId;
         /// <summary>수집 UTC입니다. 복구 중 타이머는 진행하지 않습니다.</summary>
@@ -16,6 +18,8 @@ namespace EchoZone.Online.Migration
         public List<ActorRecord> pets = new(), police = new(), players = new();
         /// <summary>순수 원장의 버전 호환 JSON입니다.</summary>
         public string ledgerJson, investigationJson;
+        /// <summary>회수의 고정 요청·시도 상태입니다. Cloud 체크포인트에 원장/보상과 함께 영속화됩니다.</summary>
+        public string retirementJournalJson;
         /// <summary>계정별 지갑과 최초 펫 지급 이력입니다.</summary>
         public List<WalletRecord> wallets = new();
         public List<string> starterPets = new();
@@ -31,12 +35,44 @@ namespace EchoZone.Online.Migration
     /// <summary>건물 현금과 남은 검사·수색 시간입니다.</summary>
     [Serializable] public sealed class BuildingRecord
     {
+        /// <summary>보충 타이머가 없는 구형 스냅샷과 구분합니다.</summary>
+        public bool hasIncomeTimer;
+        /// <summary>다음 현금 보충까지 남은 세션 초입니다. 복구 중에는 진행하지 않습니다.</summary>
+        public double incomeRemaining;
         public int id, money;
         public double inspectionRemaining, searchRemaining;
+        /// <summary>이미 기한이 지난 검사의 누적 대기 시간입니다.</summary>
+        public double inspectionOverdue;
     }
     /// <summary>네트워크 객체 ID와 독립된 개체 복원 데이터입니다.</summary>
     [Serializable] public sealed class ActorRecord
     {
+        /// <summary>펫 종류 ID이며 개체 id와 별개입니다.</summary>
+        public string definitionId;
+        /// <summary>장착 무기 종류 ID이며 weaponJson의 변경 상태와 별개입니다.</summary>
+        public string weaponDefinitionId;
+        /// <summary>도주 회차 필드가 없는 구형 스냅샷과 구분합니다.</summary>
+        public bool hasEscapeEpisode;
+        /// <summary>새 도주 진입 횟수입니다.</summary>
+        public int escapeCount;
+        /// <summary>플레이어 회수 유예의 남은 초입니다.</summary>
+        public float escapeGraceRemaining;
+        /// <summary>현재 도주 실패 판정까지 남은 초입니다.</summary>
+        public float escapeFailureRemaining;
+        /// <summary>경로 실패 제한시간을 소진했는지 나타냅니다.</summary>
+        public bool escapeFailed;
+        /// <summary>단계별 추격 데이터가 있는 스냅샷인지 나타냅니다.</summary>
+        public bool hasPursuitPhase;
+        /// <summary>마지막 목격 위치 추격 회차의 활성 여부입니다.</summary>
+        public bool pursuitActive;
+        /// <summary>이동을 마치고 현장 수색 중인지 나타냅니다.</summary>
+        public bool pursuitArrived;
+        /// <summary>현재 이동 또는 수색 단계의 남은 시간입니다.</summary>
+        public float pursuitRemaining;
+        /// <summary>이동 정체를 허용할 남은 초입니다.</summary>
+        public float pursuitStuckRemaining;
+        /// <summary>지면 목적지와 별개인 마지막 조준 위치입니다.</summary>
+        public Vector3 lastAim;
         /// <summary>계정 또는 개체의 영속 식별자입니다.</summary>
         public string id;
         /// <summary>펫 주인의 인증 계정입니다.</summary>

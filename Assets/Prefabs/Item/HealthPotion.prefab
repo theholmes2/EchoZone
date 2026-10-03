@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5845797861143599503}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Visual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -49,26 +49,13 @@ GameObject:
   - component: {fileID: 4837046391172058264}
   - component: {fileID: 8093318657361247206}
   - component: {fileID: 9001900190019001}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: HealthPotion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &9001900190019001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6187623105983906156}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e85d6645ed24b24af44f8df1ae0230c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Migration.WorldItemMigrationSource
-  worldItemId: 
 --- !u!4 &5529588769096061152
 Transform:
   m_ObjectHideFlags: 0
@@ -124,6 +111,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   itemDefinition: {fileID: 11400000, guid: 61a35f1158c34dd9a4ce890bd37cae2f, type: 2}
   quantity: 1
+  depleted:
+    m_PersistentCalls:
+      m_Calls: []
+  quantityChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!54 &5075154478773177800
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -176,6 +169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91c7a0fd92c44fdc8b340943fa2727c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkItemPickupLifecycle
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &4837046391172058264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -188,6 +182,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f81b3e8106147adba6bb3bf88d35443, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkItemPickupState
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &8093318657361247206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -200,6 +195,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94528755e7264680a2ccdb8c0ebc7648, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractionLockBehaviour
+--- !u!114 &9001900190019001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6187623105983906156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e85d6645ed24b24af44f8df1ae0230c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Online.Migration.WorldItemMigrationSource
+  worldItemId: 
 --- !u!1 &7921560100351144853
 GameObject:
   m_ObjectHideFlags: 0
@@ -212,7 +220,7 @@ GameObject:
   - component: {fileID: 2253952641427486554}
   - component: {fileID: 5808133022496110626}
   - component: {fileID: 3193778195158506223}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

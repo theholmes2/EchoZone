@@ -21,10 +21,14 @@ namespace EchoZone.Heist
             if (string.IsNullOrEmpty(worldId)) worldId = runId;
             var snapshot = new SessionWorldSnapshot { worldId = worldId, savedAtUtc = DateTime.UtcNow.ToString("O"),
                 ledgerJson = ledger.Export(), investigationJson = investigation.Export(now),
+                retirementJournalJson = Newtonsoft.Json.JsonConvert.SerializeObject(retirementJournal),
                 retiredPets = new List<string>(retiredPets), starterPets = new List<string>(starterPets) };
             foreach (var value in Buildings)
                 snapshot.buildings.Add(new BuildingRecord { id = value.Id, money = value.Money,
+                    hasIncomeTimer = buildingIncomeAt.ContainsKey(value.Id),
+                    incomeRemaining = buildingIncomeAt.TryGetValue(value.Id, out double nextIncome) ? Math.Max(0, nextIncome - now) : 0,
                     inspectionRemaining = value.Inspecting || value.InspectionEnRoute ? 0 : Math.Max(0, value.NextInspection - now),
+                    inspectionOverdue = Math.Max(0, now - value.NextInspection),
                     searchRemaining = Math.Max(0, value.SearchUntil - now) });
             foreach (var pair in wallets) snapshot.wallets.Add(new WalletRecord { playerId = pair.Key, json = pair.Value.Export() });
             foreach (var pair in reports) snapshot.reports.Add(new ReportRecord { petId = pair.Key, playerId = pair.Value });
@@ -35,7 +39,11 @@ namespace EchoZone.Heist
         public void RestoreMigration(SessionWorldSnapshot snapshot, double now)
         {
             if (!IsServer) return;
-            worldId = snapshot.worldId; inspections.Clear(); recoveries.Clear(); reports.Clear();
+            worldId = snapshot.worldId; inspections.Clear(); recoveries.Clear(); reports.Clear(); inspectionRetryAt.Clear();
+            retirementGeneration++; retirementSaving = false; nextRetirementSave = 0; pendingRetirements.Clear(); retirementJournal.Clear();
+            if (!string.IsNullOrEmpty(snapshot.retirementJournalJson))
+                retirementJournal.AddRange(Newtonsoft.Json.JsonConvert.DeserializeObject<List<RetirementRequestRecord>>(snapshot.retirementJournalJson));
+            foreach (var record in retirementJournal) if (record.State != "Confirmed") pendingRetirements.Add(record.PetId);
             ledger.Restore(snapshot.ledgerJson); investigation.Restore(snapshot.investigationJson, now);
             wallets.Clear(); foreach (var value in snapshot.wallets) wallets.Add(value.playerId, WalletSessionBrick.Restore(value.json));
             walletsToVerify.Clear(); walletsToVerify.UnionWith(wallets.Keys);
@@ -44,7 +52,11 @@ namespace EchoZone.Heist
             foreach (var value in snapshot.reports) if (!retiredPets.Contains(value.petId)) reports[value.petId] = value.playerId;
             foreach (var value in snapshot.buildings)
                 Write(new HeistBuildingState { Id = value.id, Money = value.money,
-                    NextInspection = now + value.inspectionRemaining, SearchUntil = now + value.searchRemaining });
+                    NextInspection = now + value.inspectionRemaining - value.inspectionOverdue, SearchUntil = now + value.searchRemaining });
+            ResetBuildingIncome(now);
+            foreach (var value in snapshot.buildings)
+                if (value.hasIncomeTimer && buildingIncomeAt.ContainsKey(value.id))
+                    buildingIncomeAt[value.id] = now + value.incomeRemaining;
             PublishWanted();
         }
 

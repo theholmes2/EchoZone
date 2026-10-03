@@ -30,6 +30,9 @@ namespace EchoZone.Pet
         {
             if (!IsServer || !IsSpawned) return;
             if (petPrefab == null || config == null) return;
+            var definition = RecoveryCatalog.Load().Pet(petPrefab.GetComponent<PetStateGlue>().DefinitionId);
+            if (definition.Prefab.GetComponent<PetFollowGlue>() != petPrefab)
+                throw new System.InvalidOperationException("Starter pet catalog mismatch.");
             if (EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring) return;
             var world = EchoZone.Heist.HeistWorldGlue.Instance;
             if (world == null || !world.TryGrantStarter(EchoZone.Heist.HeistWorldGlue.PlayerIdentity(OwnerClientId))) return;

@@ -57,6 +57,9 @@ public sealed class HostMigrationFunctions
                 "The checkpoint is not newer than the stored version.");
         }
 
+        if (current != null) ValidateCompletionContinuity(current.SnapshotJson, snapshotJson);
+        await WalletFunctions.IndexRetirements(context, gameApiClient, runId, snapshotJson);
+
         StoredCheckpoint next = new(
             snapshotVersion,
             snapshotJson,
@@ -165,7 +168,7 @@ public sealed class HostMigrationFunctions
     }
 
     /// <summary>Private Game Data에서 현재 Checkpoint와 write lock을 함께 읽습니다.</summary>
-    private static async Task<StoredCheckpoint?> GetStoredCheckpoint(
+    internal static async Task<StoredCheckpoint?> GetStoredCheckpoint(
         IExecutionContext context,
         IGameApiClient gameApiClient,
         string runId)
@@ -199,6 +202,34 @@ public sealed class HostMigrationFunctions
             when (exception.Response.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
+        }
+    }
+
+    /// <summary>높은 버전을 붙인 오래된 복사본도 이미 종료한 펫·회수 요청을 삭제하거나 바꿀 수 없습니다.</summary>
+    private static void ValidateCompletionContinuity(string previousJson, string nextJson)
+    {
+        using var previous = JsonDocument.Parse(previousJson);
+        using var next = JsonDocument.Parse(nextJson);
+        if (!previous.RootElement.TryGetProperty("world", out var oldWorld) || oldWorld.ValueKind == JsonValueKind.Null) return;
+        if (!next.RootElement.TryGetProperty("world", out var newWorld) || newWorld.ValueKind == JsonValueKind.Null)
+            throw new InvalidOperationException("Completed world data cannot be removed.");
+        var ids = newWorld.GetProperty("retiredPets").EnumerateArray().Select(p => p.GetString()).ToHashSet();
+        foreach (var id in oldWorld.GetProperty("retiredPets").EnumerateArray())
+            if (!ids.Contains(id.GetString())) throw new InvalidOperationException("Retired pet rollback; manual reconciliation required.");
+        if (!oldWorld.TryGetProperty("retirementJournalJson", out var oldJournal) || string.IsNullOrEmpty(oldJournal.GetString())) return;
+        if (!newWorld.TryGetProperty("retirementJournalJson", out var newJournal) || string.IsNullOrEmpty(newJournal.GetString()))
+            throw new InvalidOperationException("Retirement journal rollback.");
+        using var oldRecords = JsonDocument.Parse(oldJournal.GetString()!);
+        using var newRecords = JsonDocument.Parse(newJournal.GetString()!);
+        var records = newRecords.RootElement.EnumerateArray().ToDictionary(r => r.GetProperty("SettlementId").GetString()!);
+        string[] fixedFields = { "SessionId", "RunId", "PlayerId", "CustodianPlayerId", "PetId", "LedgerIds", "ReturnedAmounts", "ExpectedRevision", "Balance", "WalletLoaded", "Reward", "CreatedAtUtc" };
+        foreach (var record in oldRecords.RootElement.EnumerateArray())
+        {
+            if (!records.TryGetValue(record.GetProperty("SettlementId").GetString()!, out var candidate))
+                throw new InvalidOperationException("Retirement receipt missing.");
+            foreach (string field in fixedFields)
+                if (record.GetProperty(field).GetRawText() != candidate.GetProperty(field).GetRawText())
+                    throw new InvalidOperationException("Retirement receipt payload changed.");
         }
     }
 

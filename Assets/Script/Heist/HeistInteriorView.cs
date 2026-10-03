@@ -21,6 +21,7 @@ namespace EchoZone.Heist
         {
             if (inside == value) return;
             inside = value;
+            GetComponent<EchoZone.Player.View.PlayerHealthBarGlue>()?.SetHidden(EchoZone.Player.View.HealthBarHiddenReason.Interior, value);
             foreach (var r in renderers) if (r != null) r.forceRenderingOff = value;
             for (int i = 0; i < colliders.Length; i++)
             {

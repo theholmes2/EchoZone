@@ -47,6 +47,7 @@ namespace EchoZone.Heist
         /// <summary>실제 입장과 출동·대기를 구분하고 기존 서버 명령 조건에 맞는 예상 가능 여부를 표시합니다.</summary>
         private static string Describe(HeistWorldGlue world, HeistBuildingSite site, NetworkObject player, double now)
         {
+            if (!site.IsLootSite) return site.DisplayName + "\n일반 건물 · 절도/정기 검사 대상 아님";
             var state = world.Status(site.Id);
             string reason = "가능 (서버에서 최종 확인)";
             if (player.GetComponent<PlayerStats>().IsDead) reason = "플레이어 사망";

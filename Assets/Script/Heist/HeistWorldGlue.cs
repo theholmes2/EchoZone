@@ -33,7 +33,7 @@ namespace EchoZone.Heist
         /// <summary>회수 후보를 한 경찰에게만 배정합니다.</summary>
         public bool TryReserveRecovery(PetHeistGlue pet, PoliceHeistDutyGlue officer)
         {
-            if (!IsServer || pet == null || !pet.IsSpawned) return false;
+            if (!IsServer || pet == null || !pet.CanBeRecovered || officer == null || recoveries.ContainsValue(officer)) return false;
             if (recoveries.TryGetValue(pet.NetworkObjectId, out var owner) && owner != null && owner != officer) return false;
             recoveries[pet.NetworkObjectId] = officer; return true;
         }
@@ -55,7 +55,7 @@ namespace EchoZone.Heist
         {
             if (!IsServer) return null;
             // 새 PlayerObject가 요청했을 때만 완료된 지갑을 교체합니다. 미정산 재접속 지갑은 유지합니다.
-            if (!wallets.TryGetValue(playerId, out var wallet) || wallet.Settled)
+            if (!wallets.TryGetValue(playerId, out var wallet) || (wallet.Settled && (wallet.Finalized || wallet.Request == null)))
                 wallets[playerId] = wallet = new WalletSessionBrick();
             return wallet;
         }
@@ -71,6 +71,17 @@ namespace EchoZone.Heist
         }
         /// <summary>현재 규칙 에셋입니다.</summary>
         public HeistConfig Config => config;
+        /// <summary>Cloud 정산 요청에 포함할 현재 실행 식별자입니다.</summary>
+        public string WorldId => worldId;
+        /// <summary>고정 펫 집합의 미정산 원장 ID를 제공합니다.</summary>
+        public string[] SettlementLedgerIds(HashSet<string> pets) => ledger.EntryIds(pets);
+        /// <summary>Cloud 접수/확정 대기 펫은 획득·회수·공격으로 변경하지 않습니다.</summary>
+        public bool IsSettlementPet(string petId)
+        {
+            foreach (var wallet in wallets.Values)
+                if (wallet.Escaping && wallet.Request != null && System.Array.IndexOf(wallet.Request.PetIds, petId) >= 0) return true;
+            return false;
+        }
         /// <summary>로컬 HUD가 읽는 출입구 목록입니다.</summary>
         public IEnumerable<HeistBuildingSite> Sites => sites.Values;
 
@@ -80,8 +91,8 @@ namespace EchoZone.Heist
         public override void OnNetworkSpawn()
         {
             Instance = this;
-            sites.Clear(); inspections.Clear(); reports.Clear(); recoveries.Clear();
-            retirementGeneration++; pendingRetirements.Clear(); retirementSaving = false; nextRetirementSave = 0;
+            sites.Clear(); inspections.Clear(); reports.Clear(); recoveries.Clear(); inspectionRetryAt.Clear();
+            retirementGeneration++; pendingRetirements.Clear(); retirementJournal.Clear(); retirementSaving = false; nextRetirementSave = 0;
             foreach (var site in FindObjectsByType<HeistBuildingSite>(FindObjectsSortMode.None))
                 if (!sites.TryAdd(site.Id, site)) Debug.LogError($"Duplicate heist building id: {site.Id}", site);
             if (!IsServer) return;
@@ -91,8 +102,9 @@ namespace EchoZone.Heist
             EchoZone.Enemy.PoliceDestinationBrick.Shared.Clear();
             wallets.Clear(); Buildings.Clear(); WantedPlayers.Clear(); starterPets.Clear(); retiredPets.Clear();
             var ids = new List<int>(sites.Keys); ids.Sort();
-            foreach (int id in ids) Buildings.Add(new HeistBuildingState { Id = id, Money = config.InitialBuildingMoney,
+            foreach (int id in ids) Buildings.Add(new HeistBuildingState { Id = id, Money = sites[id].IsLootSite ? config.InitialBuildingMoney : 0,
                 NextInspection = NetworkManager.ServerTime.Time + config.FirstInspectionDelay + id * config.InspectionStagger });
+            ResetBuildingIncome(NetworkManager.ServerTime.Time);
         }
         /// <summary>시스템 정리 시 세션 참조를 해제합니다.</summary>
         public override void OnNetworkDespawn() { retirementGeneration++; if (Instance == this) Instance = null; inspections.Clear(); reports.Clear(); }
@@ -110,6 +122,7 @@ namespace EchoZone.Heist
             if (!IsServer || !IsSpawned || target == null || !target.IsSpawned) return false;
             if (target.IsPlayerObject) return IsWanted(target.OwnerClientId);
             var pet = target.GetComponent<PetStateGlue>();
+            if (pet != null && IsSettlementPet(pet.PetId)) return false;
             return pet != null && pet.TryGetOwner(out var owner) && IsWanted(owner.OwnerClientId) &&
                    !(target.TryGetComponent<PetHeistGlue>(out var heist) && heist.IsInside);
         }
@@ -130,7 +143,7 @@ namespace EchoZone.Heist
         /// <summary>같은 프레임에도 잔액을 먼저 차감한 뒤 기록하여 중복 획득을 막습니다.</summary>
         public bool CompleteTheft(PetHeistGlue pet, int building, NetworkObject player)
         {
-            if (!IsServer || pet == null || !pet.IsSpawned || Site(building) == null || !pet.GetComponent<PetStateGlue>().IsOwnedBy(player)) return false;
+            if (!IsServer || pet == null || !pet.IsSpawned || Site(building) == null || !Site(building).IsLootSite || !pet.GetComponent<PetStateGlue>().IsOwnedBy(player)) return false;
             var state = Status(building);
             int amount = Mathf.Min(state.Money, config.MoneyPerTheft, config.PetCapacity - pet.Cargo);
             if (amount <= 0) return false;
@@ -143,22 +156,8 @@ namespace EchoZone.Heist
         /// <summary>경찰이 도착할 수 있는 검사 예정 건물을 중복 없이 예약합니다.</summary>
         public HeistBuildingSite ReserveInspection(PoliceHeistDutyGlue officer)
         {
-            if (!IsServer || officer == null || !officer.CanAcceptInspection || inspections.ContainsValue(officer)) return null;
-            HeistBuildingSite best = null; float bestDistance = float.PositiveInfinity;
-            foreach (var site in sites.Values)
-            {
-                if (Status(site.Id).NextInspection > NetworkManager.ServerTime.Time || inspections.ContainsKey(site.Id)) continue;
-                float distance = (site.Entrance - officer.transform.position).sqrMagnitude;
-                if (distance < bestDistance && officer.CanNavigate(site.Entrance)) { best = site; bestDistance = distance; }
-            }
-            if (best != null)
-            {
-                if (!EchoZone.Enemy.PoliceDestinationBrick.Shared.TryClaim(officer.NetworkObjectId, best.Entrance,
-                    officer.GetComponent<EchoZone.Enemy.PoliceEnemyBrainGlue>().DestinationSpacing)) return null;
-                inspections[best.Id] = officer;
-                var state = Status(best.Id); state.InspectionEnRoute = true; Write(state);
-            }
-            return best;
+            if (!IsServer || !CanDispatchDuty(officer) || inspections.ContainsValue(officer)) return null;
+            return SelectInspection(officer);
         }
         /// <summary>예약한 경찰이 입장하면 검사 중 표시를 시작합니다.</summary>
         public void StartInspection(HeistBuildingSite site, PoliceHeistDutyGlue officer)
@@ -213,13 +212,15 @@ namespace EchoZone.Heist
                 foreach (string thief in thieves)
                     investigation.Schedule(thief, NetworkManager.ServerTime.Time, config.InvestigationDelaySeconds);
             }
-            state.NextInspection = NetworkManager.ServerTime.Time + (completed ? config.InspectionInterval : config.InspectionRetrySeconds);
+            if (completed) { state.NextInspection = NetworkManager.ServerTime.Time + config.InspectionInterval; inspectionRetryAt.Remove(site.Id); }
+            else inspectionRetryAt[site.Id] = NetworkManager.ServerTime.Time + config.InspectionRetrySeconds;
             Write(state); PublishWanted();
         }
         /// <summary>기존 서버 루프에서 조사 기한과 재접속한 계정의 수배 표시를 갱신합니다.</summary>
         public void ManualUpdateServer(double serverTime)
         {
             if (!IsServer || !IsSpawned || investigation == null) return;
+            TickBuildingIncome(serverTime);
             investigation.Tick(serverTime);
             PublishWanted();
             FlushRetirements();
@@ -251,6 +252,8 @@ namespace EchoZone.Heist
         public void NotifyAcquired(PetStateGlue pet, NetworkObject player)
         {
             if (!IsServer || !IsSpawned) return;
+            if (recoveries.TryGetValue(pet.NetworkObjectId, out var officer) && officer != null)
+            { officer.CancelServer(); ReleaseRecovery(officer); }
             reports.Remove(pet.PetId);
             pet.GetComponent<PetHeistGlue>()?.SetReportedServer(false);
             ledger.Acquired(pet.PetId, PlayerIdentity(player.OwnerClientId));
@@ -269,21 +272,31 @@ namespace EchoZone.Heist
         public bool Confiscate(PoliceHeistDutyGlue police, PetHeistGlue pet)
         {
             if (!IsServer || police == null || !police.IsSpawned || police.GetComponent<PlayerStats>().IsDead ||
-                pet == null || !pet.IsAbandonedCargo || Vector3.Distance(police.transform.position, pet.transform.position) > config.ConfiscationDistance + 0.2f) return false;
+                pet == null || !pet.CanBeRecovered || !recoveries.TryGetValue(pet.NetworkObjectId, out var assigned) || assigned != police ||
+                Vector3.Distance(police.transform.position, pet.transform.position) > config.ConfiscationDistance + 0.2f) return false;
             string petId = pet.GetComponent<PetStateGlue>().PetId;
             if (retiredPets.Contains(petId)) return false;
             string reporter = reports.TryGetValue(petId, out var id) ? id : null;
             // 탈출 전송 금액은 고정되어 있으므로 정산 중 감사비가 버려지지 않게 회수를 재시도합니다.
             if (reporter != null && wallets.TryGetValue(reporter, out var reporterWallet) &&
                 reporterWallet.Escaping && !reporterWallet.Settled) return false;
+            string[] ledgerIds = ledger.EntryIds(new HashSet<string> { petId });
             var restored = ledger.Return(petId, reporter, config.ReportRewardRate, out int reward);
-            if (restored.Count == 0) return false;
+            if (restored.Count == 0 && !pet.GetComponent<PetStateGlue>().IsCollectionWaiting) return false;
             foreach (var pair in restored) { var state = Status(pair.Key); state.Money += pair.Value; Write(state); }
             reports.Remove(petId); retiredPets.Add(petId); pet.SetReportedServer(false); pet.SetCargoServer(0); PublishWanted();
             if (reporter != null && reward > 0) Wallet(reporter)?.Credit(reward);
+            var rewardWallet = reporter == null ? null : Wallet(reporter);
+            retirementJournal.Add(new RetirementRequestRecord { SettlementId = System.Guid.NewGuid().ToString("N"),
+                SessionId = FindFirstObjectByType<EchoZone.Online.Relay.RelaySessionGlue>()?.SessionId,
+                RunId = FindFirstObjectByType<EchoZone.Online.Migration.HostMigrationSnapshotCollector>()?.RunId,
+                PlayerId = reporter ?? "", CustodianPlayerId = reporter ?? PlayerIdentity(NetworkManager.LocalClientId),
+                PetId = petId, LedgerIds = ledgerIds, Reward = reward, ReturnedAmounts = restored,
+                ExpectedRevision = rewardWallet?.Revision ?? 0, Balance = rewardWallet?.Balance ?? 0,
+                WalletLoaded = rewardWallet?.Loaded ?? false, CreatedAtUtc = System.DateTime.UtcNow.ToString("O"), State = "AwaitingCheckpoint" });
             ReleaseRecovery(police);
             pet.CancelServer(); pendingRetirements.Add(petId);
-            return restored.Count > 0;
+            return true;
         }
     }
 }

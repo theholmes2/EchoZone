@@ -54,5 +54,11 @@ namespace EchoZone.Online.Reconnect
 
         /// <summary>저장된 현재 마나입니다.</summary>
         public int Mana { get; }
+        /// <summary>장착 종류와 분리된 탄약/잔여시간 복구 정보입니다.</summary>
+        public string WeaponDefinitionId { get; set; }
+        /// <summary>복구 시 동일 콘텐츠 설정인지 확인할 버전입니다.</summary>
+        public int CatalogVersion { get; set; }
+        /// <summary>정의가 아닌 현재 발사 규칙 상태입니다.</summary>
+        public string WeaponJson { get; set; }
     }
 }

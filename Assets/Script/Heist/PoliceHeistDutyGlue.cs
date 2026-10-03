@@ -9,6 +9,15 @@ namespace EchoZone.Heist
     [RequireComponent(typeof(NavMeshAgent), typeof(HeistInteriorView))]
     public sealed class PoliceHeistDutyGlue : NetworkBehaviour
     {
+        /// <summary>반복 Find 없이 서버 배정에서 조회할 스폰된 경찰 목록입니다.</summary>
+        private static readonly System.Collections.Generic.HashSet<PoliceHeistDutyGlue> activeOfficers = new();
+        /// <summary>현재 피어의 배정 대상 목록입니다.</summary>
+        public static System.Collections.Generic.IEnumerable<PoliceHeistDutyGlue> ActiveOfficers => activeOfficers;
+        /// <summary>도메인 리로드를 끈 세션도 이전 경찰 참조를 재사용하지 않습니다.</summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRegistry() => activeOfficers.Clear();
+        /// <summary>검사·회수·현장 수색으로 순찰에서 빠진 상태입니다.</summary>
+        public bool HasDuty => site != null || pet != null || crimeSite != null || inside.Value;
         /// <summary>피어 공통 실내 검사 표시입니다.</summary>
         private readonly NetworkVariable<bool> inside = new();
         /// <summary>예약한 검사 건물입니다.</summary>
@@ -22,6 +31,9 @@ namespace EchoZone.Heist
         /// <summary>현재 승인한 수색 지점과 도착 대기 종료 시각입니다.</summary>
         private Vector3 searchPoint;
         private double searchWaitUntil;
+        /// <summary>수색 지점 도착 방향과 다음에 바라볼 좌우 방향입니다.</summary>
+        private Quaternion searchLookCenter;
+        private bool searchLookRight;
         /// <summary>현재 수색 지점이 완전 경로로 승인됐는지 나타냅니다.</summary>
         private bool hasSearchPoint;
         /// <summary>현장 수색 중인지 확인할 서버 진단 값입니다.</summary>
@@ -41,7 +53,7 @@ namespace EchoZone.Heist
         /// <summary>진전이 없을 때 작업을 취소할 서버 시각입니다.</summary>
         private double stuckAt;
         /// <summary>새 검사에 배정할 수 있는 비전투 상태입니다.</summary>
-        public bool CanAcceptInspection => IsSpawned && !GetComponent<PlayerStats>().IsDead && site == null && pet == null &&
+        public bool CanAcceptInspection => IsSpawned && !GetComponent<PlayerStats>().IsDead && !HasDuty &&
             GetComponent<PoliceEnemyBrainGlue>().CurrentState == PoliceEnemyState.Patrol;
         /// <summary>현재 실내 검사 중인지 나타냅니다.</summary>
         public bool IsInside => inside.Value;
@@ -51,13 +63,21 @@ namespace EchoZone.Heist
         private void Awake() { agent = GetComponent<NavMeshAgent>(); initialStoppingDistance = agent.stoppingDistance; interior = GetComponent<HeistInteriorView>(); path = new NavMeshPath(); }
         /// <summary>풀 재사용 시 지난 작업을 제거합니다.</summary>
         public override void OnNetworkSpawn()
-        { site = null; pet = null; crimeSite = null; hasSearchPoint = false; searchPointIndex = (int)(NetworkObjectId % 1024); nextSearch = nextPath = 0; inside.OnValueChanged += Changed; if (IsServer) inside.Value = false; interior.SetInside(inside.Value); }
+        { activeOfficers.Add(this); site = null; pet = null; crimeSite = null; hasSearchPoint = false; searchLookCenter = transform.rotation; searchLookRight = (NetworkObjectId & 1UL) == 0; searchPointIndex = (int)(NetworkObjectId % 1024); nextSearch = nextPath = 0; inside.OnValueChanged += Changed; if (IsServer) inside.Value = false; interior.SetInside(inside.Value); }
         /// <summary>반환 시 건물 예약과 내부 표시를 해제합니다.</summary>
-        public override void OnNetworkDespawn() { CancelServer(); inside.OnValueChanged -= Changed; interior.SetInside(false); }
+        public override void OnNetworkDespawn() { activeOfficers.Remove(this); CancelServer(); inside.OnValueChanged -= Changed; interior.SetInside(false); }
         /// <summary>검사 입퇴장을 각 피어에 표시합니다.</summary>
         private void Changed(bool before, bool after) => interior.SetInside(after);
         /// <summary>도달 불가능한 출입구를 작업으로 선택하지 않습니다.</summary>
         public bool CanNavigate(Vector3 point) => agent.enabled && agent.isOnNavMesh && agent.CalculatePath(point, path) && path.status == NavMeshPathStatus.PathComplete;
+        /// <summary>직선 거리 대신 실제 완전 경로의 길이를 배정 비용으로 제공합니다.</summary>
+        public bool TryNavigationLength(Vector3 point, out float length)
+        {
+            length = 0; if (!CanNavigate(point)) return false;
+            var corners = path.corners;
+            for (int i = 1; i < corners.Length; i++) length += Vector3.Distance(corners[i - 1], corners[i]);
+            return true;
+        }
         /// <summary>전투·사망에 양보하며 진행 중 검사는 적발 없이 취소합니다.</summary>
         public void CancelServer()
         {
@@ -74,19 +94,10 @@ namespace EchoZone.Heist
         public bool ManualUpdateServer()
         {
             var world = HeistWorldGlue.Instance;
-            if (!IsServer || world == null || !agent.enabled || !agent.isOnNavMesh) return false;
+            if (!IsServer || world == null) return false;
+            if (!agent.enabled || !agent.isOnNavMesh) { CancelServer(); return false; }
             if (GetComponent<PlayerStats>().IsDead) { CancelServer(); return false; }
             var config = world.Config; double now = NetworkManager.ServerTime.Time;
-            if (site == null && pet == null && !inside.Value && now >= nextSearch)
-            {
-                var inspection = world.ReserveInspection(this);
-                if (inspection != null)
-                {
-                    crimeSite = null; hasSearchPoint = false; site = inspection;
-                    travelUntil = now + config.TravelTimeout; nextPath = 0;
-                    progressPosition = transform.position; stuckAt = now + config.WorkStuckSeconds;
-                }
-            }
             if (crimeSite != null)
             {
                 if (world.Status(crimeSite.Id).SearchUntil <= now) { CancelServer(); return false; }
@@ -96,17 +107,19 @@ namespace EchoZone.Heist
             {
                 if (now < nextSearch) return false;
                 nextSearch = now + config.JobSearchInterval;
+                if (!world.CanDispatchDuty(this)) return false;
                 float best = float.PositiveInfinity;
                 foreach (var state in EchoZone.Pet.PetUpdateManager.Pets)
                 {
-                    if (state == null || !state.TryGetComponent<PetHeistGlue>(out var candidate) || !candidate.IsAbandonedCargo) continue;
+                    if (state == null || !state.TryGetComponent<PetHeistGlue>(out var candidate) || !candidate.CanBeRecovered) continue;
                     float distance = (transform.position - candidate.transform.position).sqrMagnitude;
-                    if (distance >= best || (!world.HasReport(candidate.NetworkObjectId) && !CanSee(candidate.transform.position)) || !CanNavigate(candidate.transform.position)) continue;
+                    if (distance >= best || (!state.IsCollectionWaiting && !world.HasReport(candidate.NetworkObjectId) && !CanSee(candidate.transform.position)) || !CanNavigate(candidate.transform.position)) continue;
                     if (!world.TryReserveRecovery(candidate, this)) continue;
                     pet = candidate; best = distance;
                     break;
                 }
-                if (pet == null)
+                if (pet == null) site = world.ReserveInspection(this);
+                if (pet == null && site == null)
                 {
                     float nearest = float.PositiveInfinity;
                     foreach (var candidate in world.Sites)
@@ -123,7 +136,7 @@ namespace EchoZone.Heist
                 if (site == null) GetComponent<PoliceEnemyBrainGlue>().ReleaseDestination();
                 progressPosition = transform.position; stuckAt = now + config.WorkStuckSeconds;
             }
-            if (pet != null && !pet.IsAbandonedCargo) { CancelServer(); return false; }
+            if (pet != null && !pet.CanBeRecovered) { CancelServer(); return false; }
             if (inside.Value)
             {
                 if (now >= finishAt) { world.FinishInspection(site, this, true); site = null; inside.Value = false; agent.stoppingDistance = initialStoppingDistance; }
@@ -155,10 +168,16 @@ namespace EchoZone.Heist
                 nextPath = now + config.JobSearchInterval;
                 var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
                 int count = Mathf.Max(3, config.CrimeSearchPointCount);
-                for (int i = 0; i < count; i++)
+                int attempts = count * 3;
+                for (int i = 0; i < attempts; i++)
                 {
-                    var candidate = CrimeSearchBrick.Point(crimeSite.Entrance, config.CrimeSearchRadius, searchPointIndex++, count);
+                    int pointIndex = searchPointIndex++;
+                    int ring = 3 - Mathf.Abs((pointIndex / count) % 3);
+                    float radius = config.CrimeSearchRadius * ring / 3f;
+                    var candidate = CrimeSearchBrick.Point(crimeSite.Entrance, radius, pointIndex, count);
                     if (!NavMesh.SamplePosition(candidate, out var hit, config.CrimeSearchSampleRadius, filter) || !CanNavigate(hit.position)) continue;
+                    if ((hit.position - transform.position).sqrMagnitude <=
+                        config.ArrivalDistance * config.ArrivalDistance) continue;
                     if (!PoliceDestinationBrick.Shared.TryClaim(NetworkObjectId, hit.position, GetComponent<PoliceEnemyBrainGlue>().DestinationSpacing)) continue;
                     searchPoint = hit.position; hasSearchPoint = true; searchWaitUntil = 0;
                     travelUntil = now + config.TravelTimeout;
@@ -175,8 +194,21 @@ namespace EchoZone.Heist
             if (!agent.pathPending && Vector3.Distance(transform.position, searchPoint) <= config.ArrivalDistance + 0.1f)
             {
                 agent.isStopped = true;
-                if (searchWaitUntil == 0) searchWaitUntil = now + config.CrimeSearchWaitSeconds;
-                transform.Rotate(Vector3.up, agent.angularSpeed * Time.deltaTime);
+                if (searchWaitUntil == 0)
+                {
+                    searchWaitUntil = now + config.CrimeSearchWaitSeconds;
+                    searchLookCenter = transform.rotation;
+                }
+                Quaternion lookTarget = searchLookCenter * Quaternion.Euler(
+                    0f,
+                    searchLookRight ? config.CrimeSearchLookAngle : -config.CrimeSearchLookAngle,
+                    0f);
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    lookTarget,
+                    config.CrimeSearchTurnSpeed * Time.deltaTime);
+                if (Quaternion.Angle(transform.rotation, lookTarget) <= 1f)
+                    searchLookRight = !searchLookRight;
                 if (now >= searchWaitUntil) { hasSearchPoint = false; PoliceDestinationBrick.Shared.Release(NetworkObjectId); }
             }
             return true;

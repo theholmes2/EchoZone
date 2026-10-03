@@ -146,7 +146,7 @@ namespace EchoZone.Enemy
             {
                 int stationIndex = (firstStationIndex + stationOffset) % policeStations.Length;
                 PoliceStationSpawnGroup station = policeStations[stationIndex];
-                if (station == null || station.AliveCount >= station.DesiredAliveCount ||
+                if (station == null || station.AliveCount >= spawnConfig.TargetFor(stationIndex, station.DesiredAliveCount) ||
                     station.SpawnPoints == null || station.SpawnPoints.Length == 0)
                 {
                     continue;
@@ -255,7 +255,7 @@ namespace EchoZone.Enemy
             {
                 if (policeStations[i] != null)
                 {
-                    count += policeStations[i].DesiredAliveCount;
+                    count += spawnConfig.TargetFor(i, policeStations[i].DesiredAliveCount);
                 }
             }
 
