@@ -5,6 +5,24 @@ using System.Linq;
 
 namespace EchoZone.Heist
 {
+    /// <summary>탈출 성공 뒤 인벤토리에서 회수하고 지갑에 환불할 서버 승인 항목입니다.</summary>
+    public sealed class SettlementReturnItem
+    {
+        /// <summary>서버 카탈로그에서 반환 규칙을 다시 검증할 아이템 ID입니다.</summary>
+        public string ItemId { get; set; } = "";
+        /// <summary>코인·탄약처럼 중첩 가능한 반환 수량입니다.</summary>
+        public int Quantity { get; set; }
+        /// <summary>총기 한 개를 정확히 식별하는 서버 발급 ID입니다.</summary>
+        public string InstanceId { get; set; } = "";
+        /// <summary>인벤토리가 아니라 현재 장착 슬롯에서 회수할 총기인지 나타냅니다.</summary>
+        public bool Equipped { get; set; }
+        /// <summary>탈출 승인 시 서버가 계산해 최종 잔액에 포함한 반환액입니다.</summary>
+        public long Credit { get; set; }
+
+        /// <summary>같은 정산 재시도에서 반환 대상과 금액이 바뀌지 않았는지 비교합니다.</summary>
+        public string StableKey() => $"{ItemId}\n{Quantity}\n{InstanceId}\n{Equipped}\n{Credit}";
+    }
+
     /// <summary>접수 후 변경하지 않는 서버 승인 탈출 요청입니다. Unity와 Cloud 양쪽이 같은 계약을 사용합니다.</summary>
     public sealed class SettlementRequest
     {
@@ -24,6 +42,8 @@ namespace EchoZone.Heist
         public string[] PetIds { get; set; } = Array.Empty<string>();
         /// <summary>완료 후 다시 지급하지 않을 장물 원장 식별자들입니다.</summary>
         public string[] LedgerIds { get; set; } = Array.Empty<string>();
+        /// <summary>Cloud 성공 뒤 서버가 인벤토리에서 제거할 코인·탄약·총기 목록입니다.</summary>
+        public SettlementReturnItem[] Returns { get; set; } = Array.Empty<SettlementReturnItem>();
 
         /// <summary>유효한 크기의 불변 요청만 받습니다. 동일 집합의 입력 순서는 비교에 영향을 주지 않습니다.</summary>
         public void Validate()
@@ -31,9 +51,16 @@ namespace EchoZone.Heist
             if (string.IsNullOrWhiteSpace(PlayerId) || string.IsNullOrWhiteSpace(SessionId) ||
                 string.IsNullOrWhiteSpace(RunId) || !Guid.TryParseExact(SettlementId, "N", out _) ||
                 Balance < 0 || Balance > 1000000000000L || ExpectedRevision < 0 ||
-                PetIds == null || LedgerIds == null || PetIds.Length > 128 || LedgerIds.Length > 4096)
+                PetIds == null || LedgerIds == null || Returns == null || PetIds.Length > 128 ||
+                LedgerIds.Length > 4096 || Returns.Length > 256)
                 throw new InvalidOperationException("Invalid settlement request.");
             ValidateIds(PetIds); ValidateIds(LedgerIds);
+            if (Returns.Any(r => r == null || string.IsNullOrWhiteSpace(r.ItemId) || r.ItemId.Length > 256 ||
+                r.Quantity <= 0 || r.Credit < 0 || r.Credit > 1000000000000L ||
+                (!string.IsNullOrEmpty(r.InstanceId) && r.Quantity != 1) ||
+                (r.Equipped && string.IsNullOrEmpty(r.InstanceId))) ||
+                Returns.Select(r => r.StableKey()).Distinct(StringComparer.Ordinal).Count() != Returns.Length)
+                throw new InvalidOperationException("Invalid settlement returns.");
         }
 
         /// <summary>중복 키와 비어 있는 대상 ID를 거절합니다.</summary>
@@ -44,11 +71,20 @@ namespace EchoZone.Heist
         }
 
         /// <summary>같은 정산 ID로 내용이 바뀌면 재시도로 인정하지 않습니다.</summary>
-        public bool SamePayload(SettlementRequest other) => other != null && PlayerId == other.PlayerId &&
-            SessionId == other.SessionId && RunId == other.RunId && SettlementId == other.SettlementId &&
-            ExpectedRevision == other.ExpectedRevision && Balance == other.Balance &&
-            PetIds.OrderBy(s => s, StringComparer.Ordinal).SequenceEqual(other.PetIds.OrderBy(s => s, StringComparer.Ordinal)) &&
-            LedgerIds.OrderBy(s => s, StringComparer.Ordinal).SequenceEqual(other.LedgerIds.OrderBy(s => s, StringComparer.Ordinal));
+        public bool SamePayload(SettlementRequest other)
+        {
+            if (other == null) return false;
+            var leftPets = PetIds ?? Array.Empty<string>(); var rightPets = other.PetIds ?? Array.Empty<string>();
+            var leftLedgers = LedgerIds ?? Array.Empty<string>(); var rightLedgers = other.LedgerIds ?? Array.Empty<string>();
+            var leftReturns = Returns ?? Array.Empty<SettlementReturnItem>();
+            var rightReturns = other.Returns ?? Array.Empty<SettlementReturnItem>();
+            return PlayerId == other.PlayerId && SessionId == other.SessionId && RunId == other.RunId &&
+                SettlementId == other.SettlementId && ExpectedRevision == other.ExpectedRevision && Balance == other.Balance &&
+                leftPets.OrderBy(s => s, StringComparer.Ordinal).SequenceEqual(rightPets.OrderBy(s => s, StringComparer.Ordinal)) &&
+                leftLedgers.OrderBy(s => s, StringComparer.Ordinal).SequenceEqual(rightLedgers.OrderBy(s => s, StringComparer.Ordinal)) &&
+                leftReturns.Select(r => r?.StableKey() ?? "<null>").OrderBy(s => s, StringComparer.Ordinal)
+                    .SequenceEqual(rightReturns.Select(r => r?.StableKey() ?? "<null>").OrderBy(s => s, StringComparer.Ordinal));
+        }
     }
 
     /// <summary>서버가 접수한 요청과 처리 상태입니다. 잔액과 같은 Cloud Save 항목에 저장합니다.</summary>

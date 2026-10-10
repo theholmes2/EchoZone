@@ -19,3 +19,4 @@ MonoBehaviour:
     \uD0C4\uC57D"
   maxStackSize: 300
   worldPrefab: {fileID: 2944307394793578013, guid: f29629a0c7b9a1e4eb4f64593ed70d0e, type: 3}
+  worldVisualPrefab: {fileID: 5145944804166720158, guid: 9b40775e641d2ac4e8d82cd89627021a, type: 3}

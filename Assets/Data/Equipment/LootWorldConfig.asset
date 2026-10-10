@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fb2e00cfe6eb0c47b6b5d7d058a3d03, type: 3}
+  m_Name: LootWorldConfig
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Equipment.LootWorldConfig
+  prefab: {fileID: 7813014426928483563, guid: 7d2c9176cf8c47949b397692d4b00a00, type: 3}
+  items: {fileID: 11400000, guid: c93d20763dcf467d935c979b2e298248, type: 2}
+  randomDrops:
+  - item: {fileID: 11400000, guid: 9457555da70572e44bce9aee1aad1e51, type: 2}
+    amount: 60
+    weight: 55
+  - item: {fileID: 11400000, guid: f210d0ce2c0fcca4b811312d92553a91, type: 2}
+    amount: 1
+    weight: 25
+  - item: {fileID: 11400000, guid: 76ef18efbc474584e9cc91f452e34e0b, type: 2}
+    amount: 1
+    weight: 15
+  - item: {fileID: 11400000, guid: 45801c3dbfc311d42938d09b47ea19d3, type: 2}
+    amount: 1
+    weight: 5
+  interactionDistance: 3
+  spawnInterval: 15
+  spawnChance: 0.9
+  randomBoxLimit: 18
+  initialSpawnCount: 10
+  clearance: 0.25
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  openSkyCheckHeight: 30
+  looseVisualOffset: {x: 0, y: -0.18, z: 0}

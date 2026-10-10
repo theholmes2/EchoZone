@@ -36,6 +36,9 @@ namespace EchoZone.Player.Input
         /// <summary>현재 프레임에 상호작용 버튼을 누르기 시작했는지 나타냅니다.</summary>
         public bool InteractPressedThisFrame { get; private set; }
 
+        /// <summary>현재 장치에서 상호작용 Input Action에 연결된 키 이름을 HUD에 제공합니다.</summary>
+        public string InteractBindingDisplayName => interactAction?.GetBindingDisplayString() ?? "E";
+
         /// <summary>소유권이 확인되기 전에는 입력을 읽지 않도록 비활성화합니다.</summary>
         private void Awake()
         {

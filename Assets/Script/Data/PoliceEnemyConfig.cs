@@ -51,6 +51,10 @@ namespace EchoZone.Enemy
         [SerializeField, Range(1f, 179f)] private float sightAngle = 100f;
         /// <summary>플레이어를 감지할 수 있는 최대 거리입니다.</summary>
         [SerializeField, Min(0f)] private float sightDistance = 14f;
+        /// <summary>시야 거리 중 움직이는 플레이어의 발소리를 들을 수 있는 비율입니다.</summary>
+        [SerializeField, Range(0f, 1f)] private float hearingDistanceRatio = 0.5f;
+        /// <summary>발소리가 난다고 판단할 플레이어의 최소 수평 이동 속도입니다.</summary>
+        [SerializeField, Min(0f)] private float hearingMovementSpeed = 0.1f;
         /// <summary>LOS Ray를 발사할 경찰 기준점의 높이입니다.</summary>
         [SerializeField, Min(0f)] private float sightOriginHeight = 1.2f;
         /// <summary>플레이어가 보일 때 초당 증가하는 발견 게이지입니다.</summary>
@@ -104,6 +108,10 @@ namespace EchoZone.Enemy
         public float SightAngle => sightAngle;
         /// <summary>플레이어를 감지할 수 있는 최대 거리입니다.</summary>
         public float SightDistance => sightDistance;
+        /// <summary>시야 거리에 적용해 발소리 감지 반경을 만드는 비율입니다.</summary>
+        public float HearingDistanceRatio => hearingDistanceRatio;
+        /// <summary>발소리 감지를 시작할 최소 수평 이동 속도입니다.</summary>
+        public float HearingMovementSpeed => hearingMovementSpeed;
         /// <summary>LOS Ray를 발사할 경찰 기준점의 높이입니다.</summary>
         public float SightOriginHeight => sightOriginHeight;
         /// <summary>플레이어가 보일 때 초당 증가하는 발견 게이지입니다.</summary>

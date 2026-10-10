@@ -17,6 +17,14 @@ namespace EchoZone.Combat.Glue
         /// <summary>동일 오브젝트의 체력 Brick을 연결합니다.</summary>
         private void Awake() => stats = GetComponent<PlayerStats>();
 
+        /// <summary>탄환 피해에만 장착 방어구 감소율을 적용한 뒤 공통 피해 처리로 전달합니다.</summary>
+        public int ApplyServerBulletDamage(float damage, NetworkObject source = null)
+        {
+            float reduction = TryGetComponent<EchoZone.Equipment.PlayerEquipmentGlue>(out var equipment)
+                ? equipment.DamageReduction : 0;
+            return ApplyServerDamage(EchoZone.Combat.Weapon.ArmorDamageBrick.Reduce(damage, reduction), source);
+        }
+
         /// <summary>서버에서만 피해를 적용하고 실제 감소한 체력을 반환합니다. 소수 피해는 내림합니다.</summary>
         public int ApplyServerDamage(float damage, NetworkObject source = null)
         {

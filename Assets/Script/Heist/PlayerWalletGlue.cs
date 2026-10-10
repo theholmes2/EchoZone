@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EchoZone.Online.Reconnect;
 using EchoZone.Online.Relay;
 using EchoZone.Pet;
+using EchoZone.Equipment;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -94,6 +95,10 @@ namespace EchoZone.Heist
         /// <summary>향후 서버 상점에서 사용할 지출 진입점입니다.</summary>
         public bool TrySpendServer(long amount) => IsServer && IsSpawned && wallet != null && wallet.TrySpend(amount);
 
+        /// <summary>상점에서 아이템을 제거하기 전에 실제 서버 잔액의 적립 가능 여부를 확인합니다.</summary>
+        public bool CanCreditServer(long amount) => IsServer && IsSpawned && wallet != null && wallet.Loaded &&
+            !wallet.Escaping && amount > 0 && wallet.Balance <= long.MaxValue - amount;
+
         /// <summary>독립 Update 없이 기존 플레이어 Update에서 서버만 실행합니다.</summary>
         public void ManualUpdate()
         {
@@ -145,13 +150,19 @@ namespace EchoZone.Heist
             foreach (var pet in PetUpdateManager.Pets)
                 if (pet != null && pet.IsOwnedBy(NetworkObject))
                 { pets.Add(pet); cargo += pet.GetComponent<PetHeistGlue>()?.Cargo ?? 0; }
-            if (!wallet.BeginEscape(cargo)) return;
+            var equipment = GetComponent<PlayerEquipmentGlue>();
+            if (equipment == null || !equipment.TryBuildExtractionReturns(out var returns, out long returnCredit))
+            {
+                status.Value = new FixedString128Bytes("반환 품목 검증 실패 · 탈출 보류");
+                return;
+            }
+            if (!wallet.BeginEscape(checked(cargo + returnCredit))) return;
             GetComponent<PlayerHeistGlue>()?.NotifySoundServer(EchoZone.Audio.GameplaySoundId.ExtractionStarted);
             var petIds = new HashSet<string>(); foreach (var pet in pets) petIds.Add(pet.PetId);
             wallet.BindRequest(new SettlementRequest { PlayerId = playerId, SessionId = sessionId,
                 RunId = FindFirstObjectByType<EchoZone.Online.Migration.HostMigrationSnapshotCollector>().RunId,
                 SettlementId = wallet.SettlementId, ExpectedRevision = wallet.Revision, Balance = wallet.Balance,
-                PetIds = new List<string>(petIds).ToArray(), LedgerIds = world.SettlementLedgerIds(petIds) });
+                PetIds = new List<string>(petIds).ToArray(), LedgerIds = world.SettlementLedgerIds(petIds), Returns = returns });
             escaping.Value = true; balance.Value = wallet.Balance;
             if (TryGetComponent<Rigidbody>(out var body) && !body.isKinematic)
             { body.linearVelocity = Vector3.zero; body.angularVelocity = Vector3.zero; }
@@ -246,6 +257,14 @@ namespace EchoZone.Heist
                     }
                 }
                 var world = HeistWorldGlue.Instance;
+                if (!wallet.ReturnsApplied)
+                {
+                    var equipment = GetComponent<PlayerEquipmentGlue>();
+                    if (equipment == null || wallet.Request == null ||
+                        !equipment.TryApplyExtractionReturns(wallet.Request.Returns ?? Array.Empty<SettlementReturnItem>()))
+                        throw new InvalidOperationException("Settlement returns differ from the frozen server inventory; manual reconciliation required.");
+                    wallet.MarkReturnsApplied();
+                }
                 var finished = new List<PetStateGlue>();
                 if (wallet.Request != null)
                     foreach (var pet in PetUpdateManager.Pets)

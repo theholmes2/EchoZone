@@ -73,6 +73,10 @@ namespace EchoZone.Online.Reconnect
             {
                 ApplySnapshot(snapshot, itemCatalog);
             }
+            else
+            {
+                GetComponent<EchoZone.Equipment.PlayerEquipmentGlue>()?.GrantStartingInventory();
+            }
 
             PublishSnapshot();
         }
@@ -106,6 +110,9 @@ namespace EchoZone.Online.Reconnect
                 snapshot);
         }
 
+        /// <summary>장착 교환이 모두 끝난 뒤 최종 인벤토리와 장착 상태를 함께 캐시에 기록합니다.</summary>
+        public void PublishEquipmentSnapshot() => PublishSnapshot();
+
         /// <summary>현재 서버 PlayerObject의 인벤토리와 스탯을 독립된 데이터 복사본으로 만듭니다.</summary>
         /// <returns>서버 상태와 인증 ID가 준비되었으면 복사본이며 아니면 null입니다.</returns>
         public PlayerSessionSnapshot CreateSnapshot()
@@ -130,7 +137,7 @@ namespace EchoZone.Online.Reconnect
 
                 cachedSlots.Add(new CachedInventorySlot(
                     slot.Item.ItemId,
-                    slot.Quantity));
+                    slot.Quantity, slot.InstanceId, slot.MagazineRounds, slot.PurchaseValue));
             }
 
             var weapon = GetComponent<EchoZone.Combat.Glue.NetworkWeaponFireGlue>();
@@ -139,6 +146,7 @@ namespace EchoZone.Online.Reconnect
                 playerStats.CurrentHealth,
                 playerStats.CurrentStamina,
                 playerStats.CurrentMana) { CatalogVersion = RecoveryCatalog.Load().Version,
+                    EquipmentJson = GetComponent<EchoZone.Equipment.PlayerEquipmentGlue>()?.Capture(),
                     WeaponDefinitionId = weapon != null ? weapon.DefinitionId : null,
                     WeaponJson = weapon != null ? weapon.CaptureMigrationWeapon((float)NetworkManager.ServerTime.Time) : null };
         }
@@ -176,10 +184,12 @@ namespace EchoZone.Online.Reconnect
                     continue;
                 }
 
-                restoredSlots.Add(new InventorySlot(item, cachedSlot.Quantity));
+                restoredSlots.Add(new InventorySlot(item, cachedSlot.Quantity,
+                    cachedSlot.InstanceId, cachedSlot.MagazineRounds, cachedSlot.PurchaseValue));
             }
 
             inventory.ReplaceSlots(restoredSlots);
+            GetComponent<EchoZone.Equipment.PlayerEquipmentGlue>()?.Restore(snapshot.EquipmentJson);
             playerStats.SetCurrentValues(
                 snapshot.Health,
                 snapshot.Stamina,

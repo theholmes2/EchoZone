@@ -12,6 +12,7 @@ public sealed class NetworkStartUI : MonoBehaviour
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject joinMenuPanel;
     [SerializeField] private GameObject statusPanel;
+    [SerializeField] private GameObject roomCodePanel;
     [SerializeField] private Button createRoomButton;
     [SerializeField] private Button showJoinButton;
     [SerializeField] private Button quitButton;
@@ -19,9 +20,19 @@ public sealed class NetworkStartUI : MonoBehaviour
     [SerializeField] private Button joinBackButton;
     [SerializeField] private TMP_InputField joinCodeInput;
     [SerializeField] private TMP_Text statusText;
+    [SerializeField] private TMP_Text roomCodeText;
+    [SerializeField, Min(0.1f)] private float completionMessageSeconds = 3f;
 
     /// <summary>중복 생성·참가 요청을 막는 현재 비동기 작업 상태입니다.</summary>
     private bool requestPending;
+    /// <summary>연결 완료 알림을 숨길 비영향 시간입니다.</summary>
+    private float completionMessageUntil = -1f;
+    /// <summary>생성·참가가 완료되는 연결 전환을 한 번만 감지합니다.</summary>
+    private bool wasConnected;
+    /// <summary>일정 시간 동안 상단 완료 알림에 표시할 문구입니다.</summary>
+    private string completionMessage = string.Empty;
+    /// <summary>퇴장 완료 때 한 번만 첫 메뉴를 복구하는 전환 판정입니다.</summary>
+    private readonly TitleReturnBrick titleReturn = new();
 
     /// <summary>Canvas 버튼 이벤트를 네트워크 명령에 연결하고 첫 메뉴를 표시합니다.</summary>
     private void Awake()
@@ -32,6 +43,8 @@ public sealed class NetworkStartUI : MonoBehaviour
         joinRoomButton?.onClick.AddListener(JoinRoom);
         joinBackButton?.onClick.AddListener(ShowMainMenu);
         joinCodeInput?.onValueChanged.AddListener(HandleJoinCodeChanged);
+        NetworkManager manager = NetworkManager.Singleton;
+        wasConnected = manager != null && (manager.IsClient || manager.IsServer);
         ShowMainMenu();
     }
 
@@ -54,7 +67,29 @@ public sealed class NetworkStartUI : MonoBehaviour
         bool recovering = relaySessionGlue != null &&
             (relaySessionGlue.IsReconnecting || relaySessionGlue.IsMigratingHost);
         bool connected = manager.IsClient || manager.IsServer;
-        statusPanel?.SetActive(recovering || connected || requestPending);
+        if (connected && !wasConnected)
+        {
+            completionMessage = manager.IsHost ? "방 생성 완료" : "방 참가 완료";
+            completionMessageUntil = Time.unscaledTime + completionMessageSeconds;
+        }
+        else if (!connected)
+        {
+            completionMessage = string.Empty;
+            completionMessageUntil = -1f;
+        }
+        wasConnected = connected;
+
+        if (titleReturn.ShouldReturn(connected, recovering, manager.ShutdownInProgress, requestPending))
+        {
+            ShowMainMenu();
+            SetButtonsInteractable(true);
+        }
+        bool showCompletion = connected && Time.unscaledTime < completionMessageUntil;
+        statusPanel?.SetActive(recovering || requestPending || showCompletion);
+        string roomCode = relaySessionGlue != null ? relaySessionGlue.JoinCode : string.Empty;
+        bool showRoomCode = manager.IsHost && !string.IsNullOrWhiteSpace(roomCode);
+        roomCodePanel?.SetActive(showRoomCode);
+        if (roomCodeText != null && showRoomCode) roomCodeText.text = $"방 코드  {roomCode}";
         if (mainMenuPanel != null && (recovering || connected)) mainMenuPanel.SetActive(false);
         if (joinMenuPanel != null && (recovering || connected)) joinMenuPanel.SetActive(false);
 
@@ -62,12 +97,10 @@ public sealed class NetworkStartUI : MonoBehaviour
         if (recovering)
             statusText.text = string.IsNullOrWhiteSpace(relaySessionGlue.RecoveryStatus)
                 ? "세션을 복구하는 중입니다..." : relaySessionGlue.RecoveryStatus;
-        else if (manager.IsHost)
-            statusText.text = $"방 생성 완료\n참가 코드  {relaySessionGlue?.JoinCode}";
-        else if (manager.IsClient)
-            statusText.text = "방에 참가했습니다";
         else if (requestPending)
             statusText.text = "연결하는 중입니다...";
+        else if (showCompletion)
+            statusText.text = completionMessage;
     }
 
     /// <summary>방 생성·참가·종료 버튼이 있는 첫 화면을 표시합니다.</summary>
@@ -76,6 +109,7 @@ public sealed class NetworkStartUI : MonoBehaviour
         mainMenuPanel?.SetActive(true);
         joinMenuPanel?.SetActive(false);
         statusPanel?.SetActive(false);
+        roomCodePanel?.SetActive(false);
     }
 
     /// <summary>참가 코드 입력 화면을 표시하고 입력창에 포커스를 줍니다.</summary>

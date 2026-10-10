@@ -13,6 +13,8 @@ namespace EchoZone.Combat.Glue
     {
         /// <summary>탈출이 승인된 플레이어는 새 사격·재장전을 실행할 수 없습니다.</summary>
         private bool ExtractionBlocked => EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring ||
+            (TryGetComponent<EchoZone.Equipment.PlayerEquipmentGlue>(out var equipment) &&
+                (!equipment.HasWeapon || (IsServer ? equipment.ServerMenuOpen : equipment.IsMenuOpen))) ||
             (TryGetComponent<EchoZone.Heist.PlayerWalletGlue>(out var wallet) && wallet.IsEscaping);
         /// <summary>서버 발사 검증과 투사체 생성에 사용할 총기 데이터입니다.</summary>
         [SerializeField] private WeaponFireConfig config;
@@ -54,12 +56,32 @@ namespace EchoZone.Combat.Glue
         }
         /// <summary>서버 총기 규칙 복사본을 반환합니다.</summary>
         public string CaptureMigrationWeapon(float now) => weaponFireBrick.Export(now);
+        /// <summary>서버 장비 교환이 저장할 현재 탄창 잔량입니다.</summary>
+        public int ServerMagazineRounds => weaponFireBrick.Ammunition;
+        /// <summary>현재 무기 정의를 장비 카탈로그와 연결합니다.</summary>
+        public WeaponFireConfig CurrentConfig => config;
+        /// <summary>장비 교환은 기존 탄창을 복원하며 무료 재장전을 발생시키지 않습니다.</summary>
+        public void EquipMagazineServer(WeaponFireConfig definition, int rounds)
+        {
+            if (!IsServer || !IsSpawned) return;
+            ConfigureWeapon(definition);
+            weaponFireBrick.RestoreMagazine(rounds < 0 ? definition.MagazineCapacity : rounds);
+            weaponFireBrick.DelayAfterEquip((float)NetworkManager.ServerTime.Time);
+        }
         /// <summary>서버가 탄퍼짐을 계산할 때 사용하는 순수 Brick입니다.</summary>
         private readonly AimDirectionBrick aimDirectionBrick = new();
         /// <summary>자동사격 중 불필요한 매 프레임 RPC를 막는 다음 로컬 요청 시각입니다.</summary>
         private float nextLocalFireRequestTime;
         /// <summary>현재 WeaponSocket 아래에 생성한 무기 외형입니다.</summary>
         private GameObject spawnedWeaponVisual;
+        /// <summary>미장착 상태에서도 마지막 총기 정의는 복구용으로 보존하고 외형만 숨깁니다.</summary>
+        private bool equipmentVisible = true;
+        /// <summary>장착 슬롯 상태에 맞춰 총기 외형을 표시합니다.</summary>
+        public void SetEquipmentVisible(bool visible)
+        {
+            equipmentVisible = visible;
+            if (spawnedWeaponVisual != null) spawnedWeaponVisual.SetActive(visible);
+        }
         /// <summary>발사·장전 승인 시 사망 여부를 확인할 체력 데이터입니다.</summary>
         private PlayerStats stats;
 
@@ -97,6 +119,7 @@ namespace EchoZone.Combat.Glue
             spawnedWeaponVisual.name = config.WeaponPrefab.name;
             spawnedWeaponVisual.transform.localPosition = Vector3.zero;
             spawnedWeaponVisual.transform.localRotation = Quaternion.identity;
+            spawnedWeaponVisual.SetActive(equipmentVisible);
 
             if (muzzle != null && muzzle.parent == weaponSocket)
             {

@@ -106,6 +106,7 @@ namespace EchoZone.Online.Migration
             foreach (var pair in pendingPlayers)
                 if (!snapshot.players.Exists(p => p.id == pair.Key)) snapshot.players.Add(pair.Value);
             Object.FindFirstObjectByType<EnemySpawnManager>()?.CaptureMigration(snapshot, now);
+            EchoZone.Equipment.LootWorldGlue.Instance?.Capture(snapshot, now);
             return snapshot;
         }
 
@@ -136,6 +137,9 @@ namespace EchoZone.Online.Migration
             if (data.police.Count > 0 && spawner == null) throw new InvalidOperationException("Migration police spawner is missing.");
             spawner?.RestoreMigration(data, now);
             world.RestoreMigration(data, now);
+            if (data.lootBags != null && data.lootBags.Count > 0 && EchoZone.Equipment.LootWorldGlue.Instance == null)
+                throw new InvalidOperationException("Loot world is missing.");
+            EchoZone.Equipment.LootWorldGlue.Instance?.Restore(data, now);
             PoliceDestinationBrick.Shared.Clear();
             foreach (var record in data.pets)
             {

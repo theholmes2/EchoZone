@@ -63,6 +63,24 @@ namespace EchoZone.Enemy
             return dot >= cosHalfAngle;
         }
 
+        /// <summary>플레이어가 충분히 움직이며 시야 거리 비율로 정한 발소리 반경 안에 있는지 판정합니다.</summary>
+        public bool CanHearMovement(
+            Vector3 observerPosition,
+            Vector3 targetPosition,
+            Vector3 targetVelocity,
+            float sightDistance,
+            float hearingDistanceRatio,
+            float minimumMovementSpeed)
+        {
+            Vector2 movement = new(targetVelocity.x, targetVelocity.z);
+            float safeMinimumSpeed = Mathf.Max(0f, minimumMovementSpeed);
+            if (movement.sqrMagnitude <= safeMinimumSpeed * safeMinimumSpeed) return false;
+
+            Vector2 offset = new(targetPosition.x - observerPosition.x, targetPosition.z - observerPosition.z);
+            float hearingDistance = Mathf.Max(0f, sightDistance) * Mathf.Clamp01(hearingDistanceRatio);
+            return offset.sqrMagnitude <= hearingDistance * hearingDistance;
+        }
+
         /// <summary>LOS 결과에 따라 발견 게이지를 증가 또는 감소시킵니다.</summary>
         public void ManualUpdateDetection(bool hasLineOfSight, float deltaTime, PoliceEnemyConfig config)
         {

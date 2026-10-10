@@ -18,6 +18,47 @@ public class PlayerInventory : MonoBehaviour
 
     /// <summary>외부에서 읽을 수 있는 현재 인벤토리 슬롯 목록입니다.</summary>
     public IReadOnlyList<InventorySlot> Slots => slots;
+    /// <summary>구매 전에 전체 묶음을 보관할 공간이 있는지 부작용 없이 검사합니다.</summary>
+    public bool CanAdd(ItemData item, int quantity)
+    {
+        if (config == null || item == null || quantity <= 0) return false;
+        long capacity = (long)Mathf.Max(0, config.MaxSlots - slots.Count) * item.MaxStackSize;
+        foreach (var slot in slots)
+            if (slot != null && slot.Item == item && string.IsNullOrEmpty(slot.InstanceId)) capacity += slot.GetRemainingSpace();
+        return capacity >= quantity;
+    }
+
+    /// <summary>다른 보관함이나 장착 슬롯에서 가져온 개별 장비를 복사해 보관합니다.</summary>
+    public bool TryAddInstance(InventorySlot source)
+    {
+        if (config == null || source?.Item == null || source.Quantity != 1 ||
+            source.Item.MaxStackSize != 1 || string.IsNullOrEmpty(source.InstanceId) ||
+            slots.Count >= config.MaxSlots || ContainsInstance(source.InstanceId)) return false;
+        slots.Add(source.Copy());
+        inventoryChanged.Invoke();
+        return true;
+    }
+
+    /// <summary>서버가 선택한 장비를 꺼내고 기존 장착품을 같은 칸에 넣는 원자적 교환입니다.</summary>
+    public bool TryExchangeInstance(string expectedInstanceId, InventorySlot replacement, out InventorySlot removed)
+    {
+        removed = null;
+        if (string.IsNullOrEmpty(expectedInstanceId)) return false;
+        int index = slots.FindIndex(slot => slot != null && slot.InstanceId == expectedInstanceId);
+        if (index < 0 || slots[index].Quantity != 1 || slots[index].Item == null ||
+            slots[index].Item.MaxStackSize != 1) return false;
+        if (replacement != null && (replacement.Item == null || replacement.Quantity != 1 ||
+            replacement.Item.MaxStackSize != 1 || string.IsNullOrEmpty(replacement.InstanceId) ||
+            ContainsInstance(replacement.InstanceId))) return false;
+        removed = slots[index].Copy();
+        if (replacement == null) slots.RemoveAt(index);
+        else slots[index] = replacement.Copy();
+        inventoryChanged.Invoke();
+        return true;
+    }
+
+    /// <summary>동일 장비가 인벤토리 안에서 중복 삽입되는 것을 막습니다.</summary>
+    private bool ContainsInstance(string id) => slots.Exists(slot => slot != null && slot.InstanceId == id);
 
     /// <summary>인벤토리 변경 이벤트를 받을 함수를 등록합니다.</summary>
     /// <param name="listener">인벤토리가 변경된 뒤 실행할 함수입니다.</param>
@@ -159,7 +200,7 @@ public class PlayerInventory : MonoBehaviour
                     continue;
                 }
 
-                slots.Add(new InventorySlot(sourceSlot.Item, sourceSlot.Quantity));
+                slots.Add(sourceSlot.Copy());
             }
         }
 

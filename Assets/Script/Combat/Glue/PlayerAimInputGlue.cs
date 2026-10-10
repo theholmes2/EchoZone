@@ -91,6 +91,11 @@ namespace EchoZone.Combat.Glue
         /// <summary>중앙 플레이어 업데이트 Glue가 입력 단계에서 호출할 조준·발사 진입점입니다.</summary>
         public void ManualUpdate(float deltaTime)
         {
+            if (TryGetComponent<EchoZone.Equipment.PlayerEquipmentGlue>(out var equipment) && equipment.IsMenuOpen)
+            {
+                hasAimPoint = false;
+                return;
+            }
             if (gameplayCamera == null)
             {
                 gameplayCamera = Camera.main;

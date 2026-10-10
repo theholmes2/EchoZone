@@ -17,6 +17,7 @@ public class ItemData : ScriptableObject
     [Header("Item Settings")]
     [SerializeField, Min(1)] private int maxStackSize = 1;     // 최대 중첩 수
     [SerializeField] private GameObject worldPrefab;// 월드 Prefab
+    [SerializeField] private GameObject worldVisualPrefab;
 
     /// <summary>아이템 종류를 구분하는 고유 식별자입니다.</summary>
     public string ItemId => itemId;
@@ -35,5 +36,8 @@ public class ItemData : ScriptableObject
 
     /// <summary>아이템을 월드에 표시할 때 사용할 프리팹입니다.</summary>
     public GameObject WorldPrefab => worldPrefab;
+
+    /// <summary>공용 네트워크 수집 오브젝트 안에서 이 아이템을 나타낼 시각 전용 프리팹입니다.</summary>
+    public GameObject WorldVisualPrefab => worldVisualPrefab;
 
 }

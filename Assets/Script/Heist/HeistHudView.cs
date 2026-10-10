@@ -22,6 +22,10 @@ namespace EchoZone.Heist
         [SerializeField] private UnityEngine.UI.Button takeButton;
         /// <summary>장물 신고 버튼입니다.</summary>
         [SerializeField] private UnityEngine.UI.Button reportButton;
+        /// <summary>가까운 아이템이 있을 때만 켜는 상호작용 안내창입니다.</summary>
+        [SerializeField] private GameObject itemPrompt;
+        /// <summary>상호작용 키와 아이템 이름·수량·설명을 표시합니다.</summary>
+        [SerializeField] private TMP_Text itemPromptText;
         /// <summary>View는 서버 규칙을 모르며 클릭만 Glue에 전달합니다.</summary>
         public void Bind(UnityEngine.Events.UnityAction steal, UnityEngine.Events.UnityAction take, UnityEngine.Events.UnityAction report)
         { stealButton.onClick.AddListener(steal); takeButton.onClick.AddListener(take); reportButton.onClick.AddListener(report); }
@@ -31,5 +35,12 @@ namespace EchoZone.Heist
         public void Show(string wanted, string building, string pets, string feedback, bool steal, bool take, bool report)
         { wantedText.text = wanted; buildingText.text = building; petText.text = pets; feedbackText.text = feedback;
             stealButton.interactable = steal; takeButton.interactable = take; reportButton.interactable = report; }
+        /// <summary>가까운 아이템 안내 문구를 표시하거나 후보가 없으면 숨깁니다.</summary>
+        public void ShowItemPrompt(string prompt)
+        {
+            bool visible = !string.IsNullOrEmpty(prompt);
+            if (itemPrompt != null && itemPrompt.activeSelf != visible) itemPrompt.SetActive(visible);
+            if (visible && itemPromptText != null) itemPromptText.text = prompt;
+        }
     }
 }

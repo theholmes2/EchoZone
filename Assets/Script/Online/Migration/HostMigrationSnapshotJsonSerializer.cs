@@ -9,7 +9,7 @@ namespace EchoZone.Online.Migration
     public sealed class HostMigrationSnapshotJsonSerializer
     {
         /// <summary>현재 코드가 읽고 쓸 수 있는 JSON 구조 버전입니다.</summary>
-        private const int CurrentSchemaVersion = 2;
+        private const int CurrentSchemaVersion = 4;
 
         /// <summary>게임 로직용 Snapshot을 JSON 문자열로 변환합니다.</summary>
         /// <param name="snapshot">직렬화할 Host Migration 복사본입니다.</param>
@@ -85,7 +85,8 @@ namespace EchoZone.Online.Migration
                     playerId = player.PlayerId,
                     health = player.State.Health,
                     stamina = player.State.Stamina,
-                    mana = player.State.Mana
+                    mana = player.State.Mana,
+                    equipmentJson = player.State.EquipmentJson
                 };
 
                 for (int slotIndex = 0;
@@ -97,7 +98,10 @@ namespace EchoZone.Online.Migration
                     playerDto.inventorySlots.Add(new InventorySlotDto
                     {
                         itemId = slot.ItemId,
-                        quantity = slot.Quantity
+                        quantity = slot.Quantity,
+                        instanceId = slot.InstanceId,
+                        magazineRounds = slot.MagazineRounds,
+                        purchaseValue = slot.PurchaseValue
                     });
                 }
 
@@ -159,7 +163,9 @@ namespace EchoZone.Online.Migration
 
                             inventorySlots.Add(new CachedInventorySlot(
                                 slotDto.itemId,
-                                slotDto.quantity));
+                                slotDto.quantity, slotDto.instanceId,
+                                dto.schemaVersion >= 3 ? slotDto.magazineRounds : -1,
+                                dto.schemaVersion >= 4 ? slotDto.purchaseValue : 0));
                         }
                     }
 
@@ -169,7 +175,7 @@ namespace EchoZone.Online.Migration
                             inventorySlots,
                             playerDto.health,
                             playerDto.stamina,
-                            playerDto.mana)));
+                            playerDto.mana) { EquipmentJson = playerDto.equipmentJson }));
                 }
             }
 
@@ -224,6 +230,8 @@ namespace EchoZone.Online.Migration
         [Serializable]
         private sealed class PlayerMigrationDto
         {
+            /// <summary>빈 장착 슬롯까지 보존하는 장비 복사본입니다.</summary>
+            public string equipmentJson;
             /// <summary>playerId 값을 저장합니다.</summary>
             public string playerId = string.Empty;
             /// <summary>health 값을 저장합니다.</summary>
@@ -240,6 +248,12 @@ namespace EchoZone.Online.Migration
         [Serializable]
         private sealed class InventorySlotDto
         {
+            /// <summary>중복 장비의 개별 식별자입니다.</summary>
+            public string instanceId;
+            /// <summary>보관 장비의 탄창 잔량입니다.</summary>
+            public int magazineRounds;
+            /// <summary>버전 4부터 보존하는 실제 장비 구매 금액입니다.</summary>
+            public int purchaseValue;
             /// <summary>itemId 값을 저장합니다.</summary>
             public string itemId = string.Empty;
             /// <summary>quantity 값을 저장합니다.</summary>

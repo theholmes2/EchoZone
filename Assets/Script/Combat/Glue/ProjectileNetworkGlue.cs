@@ -95,7 +95,7 @@ namespace EchoZone.Combat.Glue
             bool policeShot = shooter != null && shooter.GetComponent<EchoZone.Enemy.PoliceEnemyBrainGlue>() != null;
             var victim = target.GetComponentInParent<NetworkObject>();
             if (!policeShot || (EchoZone.Heist.HeistWorldGlue.Instance != null && EchoZone.Heist.HeistWorldGlue.Instance.CanPoliceAttack(victim)))
-                target.GetComponentInParent<DamageReceiverGlue>()?.ApplyServerDamage(damage, shooter);
+                target.GetComponentInParent<DamageReceiverGlue>()?.ApplyServerBulletDamage(damage, shooter);
             simulationBrick.Stop();
             if (NetworkObject.IsSpawned)
             {

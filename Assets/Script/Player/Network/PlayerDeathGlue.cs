@@ -87,7 +87,11 @@ namespace EchoZone.Player.Network
             bool dead = stats.IsDead;
             if (IsServer && dead && !wasDead)
             {
-                inventory?.ReplaceSlots(null);
+                if (!EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring)
+                {
+                    if (TryGetComponent<EchoZone.Equipment.PlayerEquipmentGlue>(out var equipment)) equipment.DropOnDeathServer();
+                    else inventory?.ReplaceSlots(null);
+                }
                 if (respawnConfig != null) respawnAt = NetworkManager.ServerTime.Time + respawnConfig.DelaySeconds;
                 else Debug.LogError("PlayerRespawnConfig is missing; automatic respawn is unavailable.", this);
             }

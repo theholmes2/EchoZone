@@ -54,6 +54,8 @@ namespace EchoZone.Player.Network
         private bool ActionBlocked => deathBlocked || (wallet != null && wallet.IsEscaping) || EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring;
         /// <summary>기존 Update에서 부활 예약을 갱신할 사망 Glue입니다.</summary>
         private PlayerDeathGlue deathGlue;
+        /// <summary>인벤토리 UI와 장착 상태를 기존 입력 순서에서 갱신합니다.</summary>
+        private EchoZone.Equipment.PlayerEquipmentGlue equipment;
         /// <summary>기존 갱신 순서에서 소속 펫의 추종과 표시를 갱신합니다.</summary>
 
         /// <summary>사망 시 잔여 입력과 수평 속도를 제거하되 카메라 갱신은 유지합니다.</summary>
@@ -94,6 +96,7 @@ namespace EchoZone.Player.Network
         {
             wallet = GetComponent<EchoZone.Heist.PlayerWalletGlue>();
             deathGlue = GetComponent<PlayerDeathGlue>();
+            equipment = GetComponent<EchoZone.Equipment.PlayerEquipmentGlue>();
             previousPresentationPosition = transform.position;
             RefreshInputAuthority();
         }
@@ -156,6 +159,7 @@ namespace EchoZone.Player.Network
             }
 
             wallet?.ManualUpdate();
+            equipment?.ManualUpdate();
             if (IsOwner && !ActionBlocked && aimInputGlue != null)
             {
                 aimInputGlue.ManualUpdate(Time.deltaTime);
@@ -195,7 +199,7 @@ namespace EchoZone.Player.Network
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         private void SubmitAimDirectionRpc(Vector3 direction)
         {
-            if (ActionBlocked || !IsFinite(direction))
+            if (ActionBlocked || (equipment != null && equipment.ServerMenuOpen) || !IsFinite(direction))
             {
                 return;
             }

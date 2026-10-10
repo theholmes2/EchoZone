@@ -49,8 +49,9 @@ public class PlayerInteractionGlue : NetworkBehaviour
 
         playerInteractionSensor.RemoveMissingCandidates();
 
-        // Despawn(false)한 대상은 여전히 존재하므로 첫 후보만 검사하면
-        // 이후 입력까지 막힌다. 네트워크 유효성 판단은 센서가 아닌 Glue에서 한다.
+        // HUD와 동일하게 가장 가까운 유효 후보를 골라 표시 대상과 실제 요청이 엇갈리지 않게 한다.
+        InteractableBehaviour nearest = null;
+        float bestDistanceSquared = float.PositiveInfinity;
         foreach (InteractableBehaviour candidate in playerInteractionSensor.Candidates)
         {
             if (candidate == null || !candidate.isActiveAndEnabled)
@@ -61,10 +62,13 @@ public class PlayerInteractionGlue : NetworkBehaviour
             NetworkObject networkObject = candidate.GetComponent<NetworkObject>();
             if (networkObject == null || !networkObject.IsSpawned)
                 continue;
-
-            RequestInteractRpc(networkObject.NetworkObjectId);
-            break;
+            float distanceSquared = (candidate.transform.position - transform.position).sqrMagnitude;
+            if (distanceSquared >= bestDistanceSquared) continue;
+            bestDistanceSquared = distanceSquared;
+            nearest = candidate;
         }
+        if (nearest != null)
+            RequestInteractRpc(nearest.GetComponent<NetworkObject>().NetworkObjectId);
     }
 
     /// <summary>
@@ -114,8 +118,10 @@ public class PlayerInteractionGlue : NetworkBehaviour
             return interactableBehaviour.TryInteract(gameObject);
         });
 
+        bool acquiredItem = interactableBehaviour is ItemPickupInteractable ||
+            interactableBehaviour is EchoZone.Equipment.LootBagInteractable;
         GetComponent<EchoZone.Heist.PlayerHeistGlue>()?.NotifySoundServer(interactionSucceeded
-            ? (interactableBehaviour is ItemPickupInteractable ? EchoZone.Audio.GameplaySoundId.ItemAcquired : EchoZone.Audio.GameplaySoundId.RequestSucceeded)
+            ? (acquiredItem ? EchoZone.Audio.GameplaySoundId.ItemAcquired : EchoZone.Audio.GameplaySoundId.RequestSucceeded)
             : EchoZone.Audio.GameplaySoundId.RequestFailed);
 
         if (interactionSucceeded == false)

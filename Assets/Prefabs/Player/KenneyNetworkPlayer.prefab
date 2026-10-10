@@ -272,6 +272,7 @@ GameObject:
   - component: {fileID: 1939508883335543937}
   - component: {fileID: 3195308179635833410}
   - component: {fileID: 9090289273330736115}
+  - component: {fileID: 9052634885174633322}
   m_Layer: 8
   m_Name: KenneyNetworkPlayer
   m_TagString: Player
@@ -637,6 +638,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Player.View.PlayerHealthBarGlue
   healthBarPrefab: {fileID: 1003, guid: faff4f93685c482a909fdb8dad736df7, type: 3}
+  displayConfig: {fileID: 0}
 --- !u!114 &7744838528211057001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -676,7 +678,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Combat.View.CharacterAimPresentationGlue
   characterView: {fileID: 5067870779452561668}
-  config: {fileID: 11400000, guid: a8220f3ff1ad4e3aa37677b3751f9764, type: 2}
+  config: {fileID: 11400000, guid: cfa6f28d96fe6a347ba3564ba84372e8, type: 2}
 --- !u!114 &7157006283994021518
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -690,7 +692,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Combat.Glue.NetworkWeaponFireGlue
   ShowTopMostFoldoutHeaderGroup: 1
-  config: {fileID: 11400000, guid: a8220f3ff1ad4e3aa37677b3751f9764, type: 2}
+  config: {fileID: 11400000, guid: cfa6f28d96fe6a347ba3564ba84372e8, type: 2}
   weaponSocket: {fileID: 2738295728846775487}
   muzzle: {fileID: 999075888609973355}
   playerBody: {fileID: 9023773892420820882}
@@ -815,6 +817,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Heist.PlayerWalletGlue
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &9052634885174633322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707473855933005347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31ff300756598554d98faa2bb98a984f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Equipment.PlayerEquipmentGlue
+  ShowTopMostFoldoutHeaderGroup: 1
+  catalog: {fileID: 11400000, guid: 109856dc0c68ea5419ce2c124e6c7979, type: 2}
 --- !u!1 &6207575198001256260
 GameObject:
   m_ObjectHideFlags: 0

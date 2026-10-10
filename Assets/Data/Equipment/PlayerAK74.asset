@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25c6dbc0d186c0e4c968b24372aa1303, type: 3}
+  m_Name: PlayerAK74
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Combat.WeaponFireConfig
+  fireIntervalSeconds: 0.1
+  magazineCapacity: 30
+  reloadSeconds: 1.5
+  autoReloadDelaySeconds: 2
+  infiniteReserveAmmunition: 0
+  enemyBurstShotCount: 1
+  enemyBurstPauseSeconds: 0.5
+  projectileSpeed: 24
+  projectileLifetimeSeconds: 3
+  damage: 10
+  projectileHitRadius: 0.05
+  projectileHitLayers:
+    serializedVersion: 2
+    m_Bits: 2867
+  stationarySpreadDegrees: 2
+  movingSpreadDegrees: 8
+  movingThreshold: 0.01
+  aimTurnDegreesPerSecond: 1080
+  weaponPrefab: {fileID: 1487774384131766, guid: b7c9d044897749918ce973a6b907295b, type: 3}
+  muzzleLocalPosition: {x: 0, y: 0, z: 0.359}
+  projectilePrefab: {fileID: 7061919837043997823, guid: 62bb24a2100847f479385eec0cc72990, type: 3}
+  ammunitionItem: {fileID: 11400000, guid: 9457555da70572e44bce9aee1aad1e51, type: 2}

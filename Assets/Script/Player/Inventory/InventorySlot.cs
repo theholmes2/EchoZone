@@ -9,6 +9,19 @@ public sealed class InventorySlot
 {
     [SerializeField] private ItemData item;
     [SerializeField] private int quantity;
+    /// <summary>같은 종류의 장비를 개별적으로 구분하는 서버 발급 식별자입니다.</summary>
+    [SerializeField] private string instanceId;
+    /// <summary>보관된 총의 탄창 잔량이며 -1은 아직 초기화하지 않은 새 장비입니다.</summary>
+    [SerializeField] private int magazineRounds = -1;
+    /// <summary>이 장비를 실제로 구매할 때 지불한 금액이며 무료·획득 장비는 0입니다.</summary>
+    [SerializeField] private int purchaseValue;
+
+    /// <summary>장비 교환·복원 시 유지할 개별 식별자입니다.</summary>
+    public string InstanceId => instanceId ?? string.Empty;
+    /// <summary>보관된 탄창 잔량으로 장착 교환을 통한 무료 재장전을 방지합니다.</summary>
+    public int MagazineRounds => magazineRounds;
+    /// <summary>탈출 시 중복 지급 없이 돌려줄 실제 구매 금액입니다.</summary>
+    public int PurchaseValue => purchaseValue;
 
     /// <summary>슬롯에 들어 있는 아이템 정의입니다.</summary>
     public ItemData Item => item;
@@ -19,9 +32,12 @@ public sealed class InventorySlot
     /// <summary>지정한 아이템과 수량으로 슬롯을 생성합니다.</summary>
     /// <param name="item">슬롯에 저장할 아이템 정의입니다.</param>
     /// <param name="quantity">저장할 수량이며 최대 중첩 수에 맞게 보정됩니다.</param>
-    public InventorySlot(ItemData item, int quantity)
+    public InventorySlot(ItemData item, int quantity, string instanceId = null, int magazineRounds = -1, int purchaseValue = 0)
     {
         this.item = item;
+        this.instanceId = instanceId ?? string.Empty;
+        this.magazineRounds = Math.Max(-1, magazineRounds);
+        this.purchaseValue = Math.Max(0, purchaseValue);
 
         this.quantity = item != null
             ? Mathf.Clamp(quantity, 0, item.MaxStackSize)
@@ -55,6 +71,9 @@ public sealed class InventorySlot
 
         return amount - addedAmount;
     }
+
+    /// <summary>슬롯의 개별 장비 상태까지 보존하는 독립 복사본을 생성합니다.</summary>
+    public InventorySlot Copy() => new InventorySlot(item, quantity, InstanceId, magazineRounds, purchaseValue);
 
     /// <summary>현재 슬롯에서 요청한 수량만큼 제거합니다.</summary>
     /// <param name="amount">제거하려는 수량입니다.</param>

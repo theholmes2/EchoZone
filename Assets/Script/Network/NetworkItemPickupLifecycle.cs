@@ -16,12 +16,20 @@ public sealed class NetworkItemPickupLifecycle : NetworkBehaviour
 
     /// <summary>renderers 값을 저장합니다.</summary>
     private Renderer[] renderers;
+    /// <summary>아이템 외형에 포함된 강조 조명을 고갈 상태와 함께 숨깁니다.</summary>
+    private Light[] lights;
+    /// <summary>이미 방출된 입자까지 고갈 즉시 제거할 파티클 목록입니다.</summary>
+    private ParticleSystem[] particleSystems;
     /// <summary>colliders 값을 저장합니다.</summary>
     private Collider[] colliders;
     /// <summary>rigidbodies 값을 저장합니다.</summary>
     private Rigidbody[] rigidbodies;
     /// <summary>originalKinematicStates 값을 저장합니다.</summary>
     private bool[] originalKinematicStates;
+    /// <summary>재Spawn 때 프리팹이 의도한 조명 활성 상태를 복원합니다.</summary>
+    private bool[] originalLightStates;
+    /// <summary>재Spawn 때 자동 재생하도록 설정된 파티클만 다시 시작합니다.</summary>
+    private bool[] originalParticlePlayStates;
 
     /// <summary>같은 게임 오브젝트에 있는 아이템과 네트워크 오브젝트를 찾습니다.</summary>
     private void Awake()
@@ -29,12 +37,24 @@ public sealed class NetworkItemPickupLifecycle : NetworkBehaviour
         itemPickup = GetComponent<ItemPickup>();
         targetNetworkObject = GetComponent<NetworkObject>();
         renderers = GetComponentsInChildren<Renderer>(true);
+        lights = GetComponentsInChildren<Light>(true);
+        particleSystems = GetComponentsInChildren<ParticleSystem>(true);
         colliders = GetComponentsInChildren<Collider>(true);
         rigidbodies = GetComponentsInChildren<Rigidbody>(true);
         originalKinematicStates = new bool[rigidbodies.Length];
+        originalLightStates = new bool[lights.Length];
+        originalParticlePlayStates = new bool[particleSystems.Length];
         for (int i = 0; i < rigidbodies.Length; i++)
         {
             originalKinematicStates[i] = rigidbodies[i].isKinematic;
+        }
+        for (int i = 0; i < lights.Length; i++)
+        {
+            originalLightStates[i] = lights[i].enabled;
+        }
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            originalParticlePlayStates[i] = particleSystems[i].main.playOnAwake;
         }
     }
 
@@ -101,6 +121,23 @@ public sealed class NetworkItemPickupLifecycle : NetworkBehaviour
         for (int i = 0; i < renderers.Length; i++)
         {
             renderers[i].enabled = visible;
+        }
+
+        for (int i = 0; i < lights.Length; i++)
+        {
+            lights[i].enabled = visible && originalLightStates[i];
+        }
+
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            if (!visible)
+            {
+                particleSystems[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+            else if (originalParticlePlayStates[i])
+            {
+                particleSystems[i].Play(true);
+            }
         }
 
         for (int i = 0; i < colliders.Length; i++)

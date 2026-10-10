@@ -38,6 +38,21 @@ public class ItemPickupInteractable : InteractableBehaviour
         return true;
     }
 
+    /// <summary>감지 범위 안의 플레이어에게 획득 키와 아이템 이름·수량·설명을 제공합니다.</summary>
+    public override bool TryGetInteractionPrompt(GameObject interactor, string binding, out string prompt)
+    {
+        prompt = string.Empty;
+        if (!CanInteract(interactor))
+            return false;
+
+        ItemData item = itemPickup.ItemDefinition;
+        string description = string.IsNullOrWhiteSpace(item.ItemDescription)
+            ? "인벤토리에 보관할 수 있는 아이템입니다."
+            : item.ItemDescription;
+        prompt = $"[{binding}] 획득\n{item.ItemName} x{itemPickup.Quantity}\n{description}";
+        return true;
+    }
+
     /// <summary>아이템을 플레이어의 인벤토리에 넣고 월드 수량 차감을 시도합니다.</summary>
     /// <param name="interactor">아이템 획득을 시도하는 플레이어 게임 오브젝트입니다.</param>
     /// <returns>아이템이 한 개 이상 실제로 이동했으면 <see langword="true"/>입니다.</returns>

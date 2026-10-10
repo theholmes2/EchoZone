@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using System.Text;
 using EchoZone.Pet;
 using Unity.Netcode;
 using UnityEngine;
+using EchoZone.Player.Input;
 
 namespace EchoZone.Heist
 {
@@ -32,7 +34,9 @@ namespace EchoZone.Heist
             var nm = NetworkManager.Singleton; var world = HeistWorldGlue.Instance;
             var local = nm != null && nm.IsClient ? nm.LocalClient?.PlayerObject : null;
             bool visible = local != null && world != null && world.IsSpawned;
-            view.SetVisible(visible); if (!visible) return;
+            view.SetVisible(visible);
+            if (!visible) { view.ShowItemPrompt(null); return; }
+            UpdateItemPrompt(local);
             if (Time.unscaledTime < nextRefresh) return;
             nextRefresh = Time.unscaledTime + world.Config.HudRefreshSeconds;
             player = local.GetComponent<PlayerHeistGlue>(); if (player == null) return;
@@ -42,20 +46,22 @@ namespace EchoZone.Heist
             foreach (var site in world.Sites)
             { if (!site.IsLootSite) continue; float distance = Vector3.Distance(local.transform.position, site.Entrance); if (distance < best) { best = distance; building = site; } }
             pet = null; best = world.Config.InteractionDistance;
-            int ownCount = 0, cargo = 0; bool available = false; string work = "";
+            var ownedPets = new List<PetStateGlue>();
+            bool available = false;
             foreach (var item in PetUpdateManager.Pets)
             {
                 if (item == null || !item.IsSpawned) continue;
                 var job = item.GetComponent<PetHeistGlue>();
                 if (item.IsOwnedBy(local))
                 {
-                    ownCount++; if (job != null) { cargo += job.Cargo; available |= !job.IsBusy && job.Cargo < world.Config.PetCapacity;
-                        if (job.IsBusy) work = job.IsInside ? $"절도 중 {System.Math.Max(0, job.FinishAt - nm.ServerTime.Time):0.0}초" : "건물로 이동 중"; }
+                    ownedPets.Add(item);
+                    if (job != null) available |= !job.IsBusy && job.Cargo < world.Config.PetCapacity;
                 }
                 if (item.State != PetBehaviourState.Waiting && !item.IsCollectionWaiting) continue;
                 float distance = Vector3.Distance(local.transform.position, item.transform.position);
                 if (distance < best) { best = distance; pet = item; }
             }
+            ownedPets.Sort((left, right) => left.NetworkObjectId.CompareTo(right.NetworkObjectId));
             var wanted = new StringBuilder("수배 명단\n");
             if (world.WantedPlayers.Count == 0) wanted.Append("수배자 없음");
             foreach (ulong id in world.WantedPlayers) wanted.Append($"플레이어 {id + 1}{(id == local.OwnerClientId ? " (나)" : "")} · 현상금 {world.Config.CaptureBounty:N0}\n");
@@ -72,32 +78,66 @@ namespace EchoZone.Heist
                 canSteal = state.Money > 0 && available && alive;
             }
             var nearbyJob = pet != null ? pet.GetComponent<PetHeistGlue>() : null;
-            var cloudWallet = local.GetComponent<PlayerWalletGlue>();
-            string walletInfo = cloudWallet == null
-                ? "Cloud 지갑: 연결 없음"
-                : cloudWallet.IsWalletLoaded
-                    ? $"Cloud 지갑: 준비 완료 · 잔액 {cloudWallet.Balance:N0} · Revision {cloudWallet.WalletRevision}"
-                    : $"Cloud 지갑: 준비 중{(string.IsNullOrEmpty(cloudWallet.Status) ? "" : " · " + cloudWallet.Status)}";
-            var inventory = local.GetComponent<PlayerInventory>();
-            var inventoryInfo = new StringBuilder("인벤토리: ");
-            if (inventory == null || inventory.Slots.Count == 0)
+            var petInfo = new StringBuilder();
+            if (ownedPets.Count == 0)
             {
-                inventoryInfo.Append("비어 있음");
+                petInfo.Append("내 펫 없음");
             }
             else
             {
-                for (int i = 0; i < inventory.Slots.Count; i++)
+                for (int i = 0; i < ownedPets.Count; i++)
                 {
-                    InventorySlot slot = inventory.Slots[i];
-                    if (slot?.Item == null) continue;
-                    if (inventoryInfo.Length > 6) inventoryInfo.Append(" | ");
-                    inventoryInfo.Append($"{i + 1}. {slot.Item.ItemName} x{slot.Quantity}");
+                    if (i > 0) petInfo.Append('\n');
+                    var ownedJob = ownedPets[i].GetComponent<PetHeistGlue>();
+                    int ownedCargo = ownedJob != null ? ownedJob.Cargo : 0;
+                    petInfo.Append($"펫 {i + 1} · 장물 {ownedCargo:N0} · {PetStatus(ownedJob, world, nm)}");
                 }
             }
-            string petInfo = $"내 펫 {ownCount}마리 · 장물 {cargo:N0} · 개인 돈 {player.RewardMoney:N0}\n{walletInfo}\n{inventoryInfo}\n{work}";
-            if (pet != null) petInfo += $"\n대기 펫 · 돈 {nearbyJob?.Cargo ?? 0:N0}" + (nearbyJob != null && nearbyJob.Reported ? " · 신고 접수됨" : "");
-            view.Show(wanted.ToString(), siteInfo, petInfo, player.Feedback, canSteal,
+            var feedback = new StringBuilder(player.Feedback);
+            if (pet != null)
+            {
+                if (feedback.Length > 0) feedback.Append('\n');
+                feedback.Append($"주변 대기 펫 · 장물 {nearbyJob?.Cargo ?? 0:N0}");
+                if (nearbyJob != null && nearbyJob.Reported) feedback.Append(" · 신고 접수됨");
+            }
+            view.Show(wanted.ToString(), siteInfo, petInfo.ToString(), feedback.ToString(), canSteal,
                 alive && pet != null && pet.CanBeClaimed, alive && nearbyJob != null && nearbyJob.IsAbandonedCargo && !nearbyJob.Reported);
+        }
+
+        /// <summary>펫 한 마리의 현재 지시 진행 상태를 우측 하단 한 줄용 문구로 바꿉니다.</summary>
+        private static string PetStatus(PetHeistGlue job, HeistWorldGlue world, NetworkManager networkManager)
+        {
+            if (job == null) return "상태 확인 불가";
+            if (job.IsBusy)
+                return job.IsInside
+                    ? $"절도 중 {System.Math.Max(0, job.FinishAt - networkManager.ServerTime.Time):0.0}초"
+                    : "건물로 이동 중";
+            return job.Cargo >= world.Config.PetCapacity ? "장물 가득" : "지시 대기";
+        }
+
+        /// <summary>센서가 이미 감지한 후보 중 실제 입력과 동일한 가장 가까운 아이템 안내를 표시합니다.</summary>
+        private void UpdateItemPrompt(NetworkObject local)
+        {
+            var sensor = local.GetComponentInChildren<PlayerInteractionSensor>();
+            var input = local.GetComponentInChildren<PlayerInputReader>();
+            if (sensor == null) { view.ShowItemPrompt(null); return; }
+            sensor.RemoveMissingCandidates();
+            InteractableBehaviour nearest = null;
+            float bestDistanceSquared = float.PositiveInfinity;
+            foreach (var candidate in sensor.Candidates)
+            {
+                if (candidate == null || !candidate.isActiveAndEnabled ||
+                    !candidate.TryGetInteractionPrompt(local.gameObject,
+                        input != null ? input.InteractBindingDisplayName : "E", out _)) continue;
+                float distanceSquared = (candidate.transform.position - local.transform.position).sqrMagnitude;
+                if (distanceSquared >= bestDistanceSquared) continue;
+                bestDistanceSquared = distanceSquared;
+                nearest = candidate;
+            }
+            string prompt = null;
+            nearest?.TryGetInteractionPrompt(local.gameObject,
+                input != null ? input.InteractBindingDisplayName : "E", out prompt);
+            view.ShowItemPrompt(prompt);
         }
     }
 }

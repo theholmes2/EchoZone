@@ -6,6 +6,15 @@ using NUnit.Framework;
 /// <summary>Cloud와 동일한 순수 정산 규칙을 직렬화 저장소 및 제어된 실패로 검증합니다. 실제 Cloud 호출 테스트는 아닙니다.</summary>
 public sealed class SettlementJournalTests
 {
+    /// <summary>코인·탄약·총기 반환액이 각 정책대로 계산됩니다.</summary>
+    [Test] public void ExtractionReturnsUseFaceValueBundleRatioAndRecordedPurchaseValue()
+    {
+        Assert.AreEqual(1500, ExtractionReturnBrick.CoinCredit(3, 500));
+        Assert.AreEqual(15, ExtractionReturnBrick.AmmunitionCredit(30, 60, 30));
+        Assert.AreEqual(300, ExtractionReturnBrick.WeaponCredit(300));
+        Assert.AreEqual(0, ExtractionReturnBrick.WeaponCredit(0));
+    }
+
     /// <summary>프로세스 메모리와 분리된 저장 결과를 흉내 냅니다.</summary>
     private sealed class Store
     {
@@ -22,7 +31,8 @@ public sealed class SettlementJournalTests
     /// <summary>동일 요청 비교에 사용하는 고정 시험 데이터입니다.</summary>
     private static SettlementRequest Request() => new SettlementRequest { PlayerId = "player", SessionId = "session", RunId = "run",
         SettlementId = "12345678901234567890123456789012", ExpectedRevision = 2, Balance = 150,
-        PetIds = new[] { "pet" }, LedgerIds = new[] { "loot" } };
+        PetIds = new[] { "pet" }, LedgerIds = new[] { "loot" }, Returns = new[] {
+            new SettlementReturnItem { ItemId = "currency.coin.bronze", Quantity = 2, Credit = 100 } } };
 
     [Test] public void FailureBeforePrepareWriteLeavesBalanceAndQueueUnchanged()
     {
@@ -54,7 +64,7 @@ public sealed class SettlementJournalTests
         SettlementJournalBrick.Prepare(data, Request(), "second"); Assert.AreEqual("first", data.Pending.CreatedAtUtc);
     }
 
-    [TestCase("balance")] [TestCase("revision")] [TestCase("pet")] [TestCase("ledger")] [TestCase("player")] [TestCase("session")]
+    [TestCase("balance")] [TestCase("revision")] [TestCase("pet")] [TestCase("ledger")] [TestCase("player")] [TestCase("session")] [TestCase("return")]
     public void SameIdWithChangedPayloadIsRejected(string field)
     {
         var data = new Store().Read(); SettlementJournalBrick.Prepare(data, Request(), "utc");
@@ -67,6 +77,7 @@ public sealed class SettlementJournalTests
             case "ledger": changed.LedgerIds = new[] { "different" }; break;
             case "player": changed.PlayerId = "different"; break;
             case "session": changed.SessionId = "different"; break;
+            case "return": changed.Returns[0].Credit++; break;
         }
         Assert.Throws<InvalidOperationException>(() => SettlementJournalBrick.Prepare(data, changed, "retry"));
         SettlementJournalBrick.Commit(data, "done");
@@ -89,7 +100,9 @@ public sealed class SettlementJournalTests
         var restored = WalletSessionBrick.Restore(wallet.Export()); Assert.IsTrue(request.SamePayload(restored.Request));
         Assert.IsFalse(restored.Settled); restored.VerifyCloud(150, 3, request.SettlementId);
         Assert.IsTrue(restored.Settled); Assert.IsFalse(restored.Finalized);
-        restored.MarkFinalized(); Assert.IsTrue(WalletSessionBrick.Restore(restored.Export()).Finalized);
+        restored.MarkReturnsApplied(); restored.MarkFinalized();
+        var completed = WalletSessionBrick.Restore(restored.Export());
+        Assert.IsTrue(completed.ReturnsApplied); Assert.IsTrue(completed.Finalized);
     }
 
     [Test] public void CloudSuccessIsRequiredBeforeFinalization()

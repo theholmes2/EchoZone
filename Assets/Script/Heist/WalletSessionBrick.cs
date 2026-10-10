@@ -21,6 +21,14 @@ namespace EchoZone.Heist
         public SettlementRequest Request { get; private set; }
         /// <summary>Cloud 성공 후 월드의 펫/원장 종료까지 적용한 상태입니다.</summary>
         public bool Finalized { get; private set; }
+        /// <summary>Cloud 성공 뒤 동결된 코인·탄약·총기 반환 목록을 적용했는지 나타냅니다.</summary>
+        public bool ReturnsApplied { get; private set; }
+        /// <summary>정산 요청에 고정된 인벤토리 반환을 한 번 적용했다고 기록합니다.</summary>
+        public void MarkReturnsApplied()
+        {
+            if (!Settled) throw new InvalidOperationException("Settlement is not confirmed.");
+            ReturnsApplied = true;
+        }
         /// <summary>확정된 정산만 새 입장 지갑으로 교체할 수 있도록 월드 적용을 기록합니다.</summary>
         public void MarkFinalized()
         {
@@ -91,19 +99,21 @@ namespace EchoZone.Heist
         }
         /// <summary>로드 전 보상까지 포함한 지갑 복사본입니다.</summary>
         public string Export() => Newtonsoft.Json.JsonConvert.SerializeObject(new State { loaded = Loaded, balance = Balance,
-            revision = Revision, escaping = Escaping, settled = Settled, settlementId = SettlementId, pendingCredit = pendingCredit, request = Request, finalized = Finalized });
+            revision = Revision, escaping = Escaping, settled = Settled, settlementId = SettlementId, pendingCredit = pendingCredit,
+            request = Request, finalized = Finalized, returnsApplied = ReturnsApplied });
         /// <summary>같은 세션 지갑을 새 호스트에서 복원합니다.</summary>
         public static WalletSessionBrick Restore(string json)
         {
             var s = Newtonsoft.Json.JsonConvert.DeserializeObject<State>(json);
             if (s == null || s.balance < 0 || s.revision < 0 || s.pendingCredit < 0) throw new InvalidOperationException("Invalid migration wallet");
             return new WalletSessionBrick { Loaded = s.loaded, Balance = s.balance, Revision = s.revision, Escaping = s.escaping,
-                Settled = s.settled, SettlementId = s.settlementId, pendingCredit = s.pendingCredit, Request = s.request, Finalized = s.finalized };
+                Settled = s.settled, SettlementId = s.settlementId, pendingCredit = s.pendingCredit, Request = s.request,
+                Finalized = s.finalized, ReturnsApplied = s.returnsApplied };
         }
         /// <summary>지갑의 명시적 직렬화 필드입니다.</summary>
         private sealed class State
         {
-            public bool loaded, escaping, settled, finalized;
+            public bool loaded, escaping, settled, finalized, returnsApplied;
             public long balance, revision, pendingCredit;
             public string settlementId;
             /// <summary>구형 지갑에는 없는 승인 본문입니다. 누락 시 임의로 새 본문을 만들지 않습니다.</summary>

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c0f982ef59fd794f92eb064c5369db5, type: 3}
+  m_Name: CoinGold
+  m_EditorClassIdentifier: Assembly-CSharp::CurrencyItemData
+  itemId: currency.coin.gold
+  itemName: "500\uC6D0 \uB3D9\uC804"
+  itemIcon: {fileID: 0}
+  itemDescription: "\uD68D\uB4DD \uC989\uC2DC \uAC1C\uC778 \uC9C0\uAC11\uC5D0 500\uC6D0\uC744
+    \uC801\uB9BD\uD569\uB2C8\uB2E4."
+  maxStackSize: 10
+  worldPrefab: {fileID: 0}
+  worldVisualPrefab: {fileID: 2808202327702769817, guid: 9b1625b25d47cd642964e78c0a421e30, type: 3}
+  creditValue: 500

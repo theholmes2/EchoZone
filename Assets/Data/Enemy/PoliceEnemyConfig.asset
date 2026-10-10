@@ -32,6 +32,8 @@ MonoBehaviour:
   patrolWaitSeconds: 1
   sightAngle: 100
   sightDistance: 14
+  hearingDistanceRatio: 0.5
+  hearingMovementSpeed: 0.1
   sightOriginHeight: 1.2
   detectionGainPerSecond: 0.8
   detectionLossPerSecond: 0.45

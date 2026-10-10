@@ -7,6 +7,10 @@ namespace EchoZone.Online.Migration
     /// <summary>고정 ID와 남은 시간으로 저장하는 확장 월드 데이터입니다.</summary>
     [Serializable] public sealed class SessionWorldSnapshot
     {
+        /// <summary>사망 전리품과 랜덤 탄약 상자의 남은 내용입니다.</summary>
+        public List<EchoZone.Equipment.LootBagRecord> lootBags = new();
+        /// <summary>복구 중 정지할 다음 랜덤 탄약 생성까지 남은 초입니다.</summary>
+        public float lootSpawnRemaining;
         /// <summary>종류 정의/설정의 콘텐츠 버전입니다. 0인 구형 월드는 명시적 변환 없이 복원하지 않습니다.</summary>
         public int catalogVersion;
         /// <summary>분기하지 않고 이어받을 월드 식별자입니다.</summary>

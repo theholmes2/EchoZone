@@ -25,3 +25,5 @@ MonoBehaviour:
     Config: {fileID: 11400000, guid: a8220f3ff1ad4e3aa37677b3751f9764, type: 2}
   - Id: weapon.police.ak74
     Config: {fileID: 11400000, guid: 488ea4600e0f4c68804234ca725bdebb, type: 2}
+  - Id: weapon.player.ak74
+    Config: {fileID: 11400000, guid: fc9bf07fa2718014182a2a26cd8776bc, type: 2}

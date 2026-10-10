@@ -286,6 +286,7 @@ namespace EchoZone.Enemy
             { currentTarget = null; targetIdentified = false; pursuingAttacker = false; perceptionBrick.Reset(); ChangeState(PoliceEnemyState.Patrol, serverTime); }
 
             canSeeCurrentTarget = EvaluatePerception();
+            if (!canSeeCurrentTarget) EvaluateHearing();
             perceptionBrick.ManualUpdateDetection(canSeeCurrentTarget, Mathf.Max(0f, deltaTime), config);
             weaponFireGlue?.ManualUpdate(serverTime);
 
@@ -414,6 +415,50 @@ namespace EchoZone.Enemy
             RememberGroundPosition(bestTarget.position);
             lostPursuit.Reset();
             return true;
+        }
+
+        /// <summary>시야 절반 거리에서 움직이는 공격 대상 플레이어의 발소리 위치를 기억해 추격을 시작합니다.</summary>
+        private void EvaluateHearing()
+        {
+            Collider[] candidates = Physics.OverlapSphere(
+                transform.position,
+                config.SightDistance * config.HearingDistanceRatio,
+                config.TargetLayerMask,
+                QueryTriggerInteraction.Ignore);
+
+            NetworkObject heardPlayer = null;
+            float bestSqrDistance = float.PositiveInfinity;
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                NetworkObject player = candidates[i]?.GetComponentInParent<NetworkObject>();
+                if (player == null || !player.IsSpawned || !player.IsPlayerObject ||
+                    !player.TryGetComponent(out Rigidbody body) ||
+                    (player.TryGetComponent<PlayerStats>(out var stats) && stats.IsDead) ||
+                    EchoZone.Heist.HeistWorldGlue.Instance == null ||
+                    !EchoZone.Heist.HeistWorldGlue.Instance.CanPoliceAttack(player))
+                    continue;
+
+                if (!perceptionBrick.CanHearMovement(
+                        transform.position,
+                        player.transform.position,
+                        body.linearVelocity,
+                        config.SightDistance,
+                        config.HearingDistanceRatio,
+                        config.HearingMovementSpeed))
+                    continue;
+
+                float sqrDistance = (player.transform.position - transform.position).sqrMagnitude;
+                if (sqrDistance >= bestSqrDistance) continue;
+                bestSqrDistance = sqrDistance;
+                heardPlayer = player;
+            }
+
+            if (heardPlayer == null) return;
+            if (currentTarget != heardPlayer.transform) perceptionBrick.Reset();
+            currentTarget = heardPlayer.transform;
+            targetIdentified = true;
+            RememberGroundPosition(heardPlayer.transform.position);
+            lostPursuit.Reset();
         }
 
         /// <summary>현재 인지 결과와 거리 조건에 따라 다음 AI 상태를 결정합니다.</summary>

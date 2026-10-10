@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b64772c7d3cdd8459bdbb3926b516b3, type: 3}
+  m_Name: EquipmentCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::EchoZone.Equipment.EquipmentCatalog
+  definitions:
+  - item: {fileID: 11400000, guid: 46fd938b546303b43acdad02f0c824dd, type: 2}
+    kind: 0
+    weapon: {fileID: 11400000, guid: cfa6f28d96fe6a347ba3564ba84372e8, type: 2}
+    armorLevel: 1
+    damageReduction: 0
+    price: 100
+  - item: {fileID: 11400000, guid: d4c1cae3d011bb0458f3f1cef7073d80, type: 2}
+    kind: 0
+    weapon: {fileID: 11400000, guid: fc9bf07fa2718014182a2a26cd8776bc, type: 2}
+    armorLevel: 1
+    damageReduction: 0
+    price: 300
+  - item: {fileID: 11400000, guid: c88e0cdfb8b54cd45b31ef12e1f81d91, type: 2}
+    kind: 1
+    weapon: {fileID: 0}
+    armorLevel: 1
+    damageReduction: 0.35
+    price: 100
+  - item: {fileID: 11400000, guid: 4525202d1cc5a8344a25a6835460fab4, type: 2}
+    kind: 1
+    weapon: {fileID: 0}
+    armorLevel: 2
+    damageReduction: 0.5
+    price: 250
+  - item: {fileID: 11400000, guid: 120e855b75a645e4f97b8131ac5923b2, type: 2}
+    kind: 1
+    weapon: {fileID: 0}
+    armorLevel: 3
+    damageReduction: 0.65
+    price: 500
+  ammunition: {fileID: 11400000, guid: 9457555da70572e44bce9aee1aad1e51, type: 2}
+  ammunitionBundle: 60
+  startingAmmunition: 30
+  ammunitionPrice: 30
+  interactionDistance: 3
+  resalePercent: 50

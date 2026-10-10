@@ -40,6 +40,19 @@ namespace EchoZone.Combat.Weapon
         /// <summary>현재 재장전 과정이 진행 중인지 나타냅니다.</summary>
         public bool IsReloading => isReloading;
 
+        /// <summary>장비 교환 시 보관된 탄창만 복원하고 진행 중 장전은 취소합니다.</summary>
+        public void RestoreMagazine(int rounds)
+        {
+            ammunition = config == null ? 0 : Mathf.Clamp(rounds, 0, config.MagazineCapacity);
+            isReloading = false;
+            hasFiredSinceReload = false;
+        }
+        /// <summary>총을 빠르게 교환해 발사 간격을 우회하지 못하게 교환 후 최소 대기를 적용합니다.</summary>
+        public void DelayAfterEquip(float now)
+        {
+            if (config != null) nextFireTime = Mathf.Max(nextFireTime, now + config.FireIntervalSeconds);
+        }
+
         /// <summary>Configure 작업을 수행합니다.</summary>
         public void Configure(WeaponFireConfig weaponConfig)
         {

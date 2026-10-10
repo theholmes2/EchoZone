@@ -43,6 +43,7 @@ namespace EchoZone.Enemy
                     client.PlayerObject?.GetComponent<EchoZone.Pet.PlayerPetGlue>()?.EnsureStarterServer();
                 EchoZone.Heist.HeistWorldGlue.Instance?.ManualUpdateServer(networkManager.ServerTime.Time);
                 spawnManager?.ManualUpdate(serverTime);
+                EchoZone.Equipment.LootWorldGlue.Instance?.ManualUpdate(serverTime);
             }
             updateManager?.ManualUpdate(serverTime, Time.deltaTime);
             EchoZone.Pet.PetUpdateManager.ManualUpdate(Time.deltaTime);

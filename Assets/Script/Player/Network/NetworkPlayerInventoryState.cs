@@ -96,7 +96,7 @@ namespace EchoZone.Player.Network
 
                 networkSlots.Add(new NetworkInventorySlot(
                     slot.Item.ItemId,
-                    slot.Quantity));
+                    slot.Quantity, slot.InstanceId, slot.MagazineRounds, slot.PurchaseValue));
             }
         }
 
@@ -130,7 +130,8 @@ namespace EchoZone.Player.Network
                     continue;
                 }
 
-                restoredSlots.Add(new InventorySlot(item, networkSlot.Quantity));
+                restoredSlots.Add(new InventorySlot(item, networkSlot.Quantity,
+                    networkSlot.InstanceId.ToString(), networkSlot.MagazineRounds, networkSlot.PurchaseValue));
             }
 
             inventory.ReplaceSlots(restoredSlots);
