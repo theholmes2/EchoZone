@@ -280,6 +280,8 @@ namespace EchoZone.Enemy
                 return;
             }
 
+            KeepUpright();
+
             if (heistDuty != null && heistDuty.IsInside) { heistDuty.ManualUpdateServer(); return; }
             if (currentTarget != null && (EchoZone.Heist.HeistWorldGlue.Instance == null ||
                 !EchoZone.Heist.HeistWorldGlue.Instance.CanPoliceAttack(currentTarget.GetComponent<NetworkObject>())))
@@ -735,6 +737,13 @@ namespace EchoZone.Enemy
             {
                 transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             }
+        }
+
+        /// <summary>물리 충돌이나 애니메이션 루트 회전이 경찰 본체를 기울여도 서버 권위 회전을 수직으로 복구합니다.</summary>
+        private void KeepUpright()
+        {
+            Vector3 eulerAngles = transform.eulerAngles;
+            transform.rotation = Quaternion.Euler(0f, eulerAngles.y, 0f);
         }
 
         /// <summary>두 위치 사이의 지면 기준 거리를 계산합니다.</summary>
