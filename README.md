@@ -1,208 +1,149 @@
 # EchoZone
 
-도시에서 펫에게 절도를 지시하고 장물을 회수해 탈출하는 서버 권한 기반 온라인 하이스트 게임입니다.
+도시에서 펫에게 절도를 지시하고, 경찰의 수색을 피해 장물을 회수·정산하는 **PC 온라인 하이스트 게임**입니다.
 
-플레이어는 방을 만들거나 코드로 참가해 경찰의 순찰과 수색을 피하고, 펫이 운반한 장물과 월드 아이템을 확보해 탈출 지점에서 개인 지갑으로 정산합니다. 플레이 도중 Host가 이탈하더라도 Unity Multiplayer Services의 Host Migration과 프로젝트 Snapshot으로 같은 세션을 이어가는 구조를 구현했습니다.
+Relay 기반 Host / Client 구조로 게임 판정과 상태 복제를 연결하고, Host 교체 시 월드 복원과 탈출 보상의 Cloud 정산을 구현했습니다.
 
-## 플레이 영상
+## 시연 영상
 
-> 최종 플레이 영상 촬영 후 링크를 추가할 예정입니다.
+**[▶ EchoZone 플레이 영상 보기](https://youtu.be/tE5l8Fiq7lM)**
 
-## 플레이 방법
+## 핵심 플레이와 기능
+
+**로그인·방 접속 → 펫 획득·절도 지시 → 경찰 수색·교전 → 장물 회수 → 탈출·개인 잔액 반영**
+
+| 플레이 요소 | 구현 내용 |
+|---|---|
+| 펫 절도 | 건물로 이동해 장물을 싣고 복귀하며, 등급과 적재량에 따라 이동 속도가 달라집니다. |
+| 경찰 대응 | 순찰·소리 인지·시야 확인·현장 조사·추격·전투를 연결하고, 절도 증거와 공격에 따라 수배를 처리합니다. |
+| 장비와 아이템 | 무기·방어구·탄약의 구매·판매·장착, 월드 아이템과 사망 시 남는 Loot Bag 획득을 지원합니다. |
+| 탈출 | 서버가 확정한 장물과 반납 목록으로 개인 지갑을 정산하고 타이틀로 복귀합니다. |
+| 화면과 연출 | 카메라 줌·건물 시스루, 인벤토리·수배 UI와 서버 확정 이벤트에 따른 효과음·총구 섬광을 연결했습니다. |
+
+[경찰 행동 설계](Docs/PoliceInvestigationAndRetaliation.md) · [장비·상점 설계](Docs/EquipmentShopImplementation.md)
+
+<details>
+<summary>플레이 방법</summary>
 
 | 입력 | 기능 |
 |---|---|
-| `WASD` 또는 방향키 | 카메라 기준 이동 |
-| 마우스 이동 | 조준 |
-| 마우스 왼쪽 버튼 | 총기 발사 |
+| `WASD` / 방향키 | 카메라 기준 이동 |
+| 마우스 이동 / 왼쪽 버튼 | 조준 / 사격 |
 | `R` | 재장전 |
-| `F` | 아이템 획득, 펫 및 건물 상호작용 |
-| 마우스 휠 | 카메라 확대·축소 |
-| 마우스 클릭 | 타이틀, 상점 및 인벤토리 UI 조작 |
+| `F` | 아이템 획득, 펫·건물 상호작용 |
+| `I` | 인벤토리·장비 UI |
+| 마우스 휠 / 클릭 | 카메라 확대·축소 / UI 조작 |
 
-방 생성자는 Host로 게임을 시작하며, 다른 플레이어는 화면 좌측 상단의 방 코드를 입력해 참가합니다.
+로그인 후 Host가 방을 생성하면, Client는 방 코드로 참가합니다.
 
-## 프로젝트 개요
+</details>
 
-- **장르**: 온라인 멀티플레이 하이스트 / 액션
-- **플랫폼**: PC
-- **플레이 방식**: Relay 기반 Host / Client 협동 및 경쟁
-- **핵심 흐름**: 방 생성·참가 → 펫 획득 → 건물 절도 → 경찰 수색·교전 → 장물 회수 → 탈출 정산
-- **개발 목적**: 서버 권한 판정, 네트워크 동기화, 재접속, Host Migration과 Cloud Save를 하나의 실제 플레이 흐름으로 설계하고 검증하는 포트폴리오 프로젝트입니다.
+## 네트워크 구조와 문제 해결
 
-## 개발 환경
+### 전체 구조 — 연결·게임 판정·저장의 역할 분리
 
-- Unity 6.3 LTS (6000.3.19f1)
-- Netcode for GameObjects 2.7.0
-- Multiplayer Play Mode 1.3.3
-- Multiplayer Services 1.2.0
-- Unity Relay / Lobby / Authentication
-- Cloud Save 3.4.1 / Cloud Code 2.10.2
-- AI Navigation 2.0.13 / NavMesh
-- Universal Render Pipeline 17.3.0
-- Unity Input System 1.19.0
-- uGUI / TextMesh Pro
-
-## 주요 기능
-
-### 서버 권한 멀티플레이
-
-- 클라이언트는 이동, 사격과 상호작용을 요청하고 서버가 소유권·생존 상태·거리·대상 조건을 다시 검사합니다.
-- 플레이어, 펫, 경찰, 투사체, 월드 아이템과 인벤토리를 Netcode for GameObjects로 동기화합니다.
-- 같은 아이템에 동시 요청이 들어와도 서버 임계 구역에서 최신 수량을 재검사해 중복 지급을 차단합니다.
-- Host가 서버와 클라이언트를 동시에 실행해도 총구 섬광과 효과음이 중복되지 않도록 성공 확정 후 한 번만 전파합니다.
-
-```text
-Client 입력
-→ ServerRpc 요청
-→ 서버 권한·거리·상태 검증
-→ 서버 원본 상태 변경
-→ NetworkVariable / NetworkList / ClientRpc 복제
-→ 각 Client가 화면·애니메이션·사운드에 반영
+```mermaid
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","darkMode":true,"background":"#111827","primaryColor":"#1E3553","primaryTextColor":"#FFFFFF","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","textColor":"#FFFFFF","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","actorLineColor":"#7189A8","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","edgeLabelBackground":"#111827"},"flowchart":{"nodeSpacing":24,"rankSpacing":28,"padding":12,"wrappingWidth":300},"sequence":{"actorMargin":30,"width":120,"height":44,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":19,"messageFontSize":18,"noteFontSize":18},"themeCSS":"text, tspan { fill: #FFFFFF !important; } .nodeLabel, .nodeLabel p, .edgeLabel, .edgeLabel p { color: #FFFFFF !important; } .messageText, .noteText { fill: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2px !important; } .actor-line { stroke: #7189A8 !important; }"}}%%
+flowchart TD
+    C["Client · 입력과 화면"] <-->|게임 패킷| R["Relay · 패킷 중계"]
+    R <-->|게임 패킷| H["Host · NGO 서버<br/>로컬 플레이어"]
+    C -->|방 참가| S["MPS Session · 방과 Host 관리"]
+    H <-->|방 관리 / Host 변경| S
+    H <-->|정산 / 체크포인트| CC["Cloud Code<br/>권한 · 정산 요청 검증"]
+    CC <-->|영속 데이터| CS[("Cloud Save · 개인 지갑 / 월드")]
+    C <-->|본인 지갑 준비| CC
+    CC -->|현재 Host 확인| S
+    classDef default fill:#1E3553,stroke:#93B4DB,stroke-width:2px,color:#FFFFFF
+    linkStyle default stroke:#7189A8,stroke-width:2px,color:#FFFFFF
 ```
 
-### 펫 절도와 경찰 대응
+별도 상시 게임 서버의 운영 부담을 줄이기 위해 Host 구조를 사용하고, 방 관리와 연결 중계는 MPS·Relay에 맡겼습니다. 계정 인증은 Unity Authentication이 담당하며, 게임 판정은 Host, 중요한 저장 요청의 검증은 Cloud Code가 담당합니다.
 
-- 펫에게 건물 절도를 지시하면 출입구로 이동해 일정 시간 작업한 뒤 장물을 싣고 복귀합니다.
-- 적재량과 펫 등급에 따라 이동 속도가 달라지며, 주인 사망 후 남은 장물 펫은 다른 플레이어가 획득하거나 신고할 수 있습니다.
-- 경찰은 순찰, 움직임 소리 인지, 시야 확인, 추격, 점사 사격, 건물 검사와 현장 수색을 수행합니다.
-- 경찰이 절도 중인 펫을 적발하면 장물을 반환하고 주인을 수배합니다. 수배되지 않은 플레이어와 펫은 공격하지 않습니다.
-- 다른 플레이어가 수배자를 쓰러뜨리면 서버가 피해 출처와 중복 지급 여부를 검증한 뒤 현상금을 지급합니다.
+공식 문서: [Session 네트워크 연결](https://docs.unity.com/en-us/mps-sdk/manage-session-network-connection) · [Relay와 Lobby의 역할](https://docs.unity.com/en-us/mps-sdk/advanced-config/relay-vs-lobby)
 
-### 장비, 인벤토리와 월드 아이템
+### 서버 권한 — 요청과 확정 결과 분리
 
-- 무기·방어구 정의와 가격을 ScriptableObject 카탈로그로 관리합니다.
-- 권총과 소총은 서로 다른 탄창 크기와 발사 간격을 사용하며, 경찰은 무기별 설정에 따라 끊어 쏩니다.
-- 상점에서 장비와 탄약을 구매하고 장착·해제할 수 있으며, 장착 무기는 Weapon Socket 아래에서 교체됩니다.
-- 동전과 탄약은 서버가 월드 곳곳에 생성합니다. 단일 아이템과 여러 아이템이 든 Loot Bag은 같은 인벤토리 지급 규칙을 공유합니다.
-- 탈출 시 장물과 동전은 개인 지갑에 반영하고 장비·탄약은 서버가 검증한 목록에 따라 반납합니다.
-
-### 탈출 정산과 Cloud 지갑
-
-- 방 입장 전에 인증 플레이어의 지갑을 조회하고 존재하지 않을 때만 0원 지갑을 생성합니다.
-- 탈출을 시작하면 서버 인벤토리와 정산 대상을 동결하고 Cloud Code를 통해 잔액을 갱신합니다.
-- 정산 ID, Revision/CAS와 완료 기록 순서로 재시도나 연결 복구 중 같은 장물이 두 번 지급되지 않게 했습니다.
-- 플레이어별 Cloud 지갑을 사용해 한 Client의 정산이 Host나 다른 Client의 잔액에 섞이지 않습니다.
-
-### 재접속과 Host Migration
-
-- 짧은 Client 단절은 기존 Session과 멤버십을 유지한 채 `ReconnectAsync`로 같은 방에 복귀합니다.
-- Host가 갑자기 이탈하면 Unity Multiplayer Services의 호스트 선출 이벤트를 기다리고 승격된 Host가 Relay 네트워크를 재구성합니다.
-- 플레이어 체력·인벤토리·장비, 펫, 건물 잔액·수배 상태와 월드 아이템을 Snapshot으로 수집해 새 Host에 적용합니다.
-- Session Snapshot과 Cloud 체크포인트를 비교해 더 최신인 권위 상태를 선택하고, Run ID와 세대 검사로 오래된 비동기 응답을 차단합니다.
-
-```text
-연결 단절 감지
-→ 기존 Session 유지 및 상태 Refresh
-→ Unity 호스트 선출 이벤트 대기
-→ 새 Host의 Relay 재구성
-→ 최신 Snapshot 선택·적용
-→ NGO 재연결 및 플레이 재개
+```mermaid
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","darkMode":true,"background":"#111827","primaryColor":"#1E3553","primaryTextColor":"#FFFFFF","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","textColor":"#FFFFFF","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","actorLineColor":"#7189A8","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","edgeLabelBackground":"#111827"},"flowchart":{"nodeSpacing":24,"rankSpacing":28,"padding":12,"wrappingWidth":300},"sequence":{"actorMargin":30,"width":120,"height":44,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":19,"messageFontSize":18,"noteFontSize":18},"themeCSS":"text, tspan { fill: #FFFFFF !important; } .nodeLabel, .nodeLabel p, .edgeLabel, .edgeLabel p { color: #FFFFFF !important; } .messageText, .noteText { fill: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2px !important; } .actor-line { stroke: #7189A8 !important; }"}}%%
+sequenceDiagram
+    participant C as Client
+    participant H as Host
+    participant G as 게임 규칙
+    rect rgb(18, 36, 58)
+        C->>H: 아이템 획득 요청
+        H->>H: 소유권 / 생존 / 범위 검증
+        H->>G: 잠금 안에서<br/>획득 조건 재검사
+        G-->>H: 아이템 · 인벤토리<br/>변경 결과
+    end
+    rect rgb(13, 39, 29)
+        H-->>C: 승인된 확정 상태 복제
+        C->>C: 화면 / UI / 확정 연출 반영
+    end
 ```
 
-### 카메라, UI와 사운드
+같은 아이템의 조건 검사와 지급을 하나의 임계 구역으로 묶고, 서버의 최신 수량을 기준으로 처리해 중복 획득을 방지합니다. 실패한 요청은 지급으로 이어지지 않으며, 인벤토리는 소유자에게 복제하고 성공 연출은 서버 확정 이후 전달해 Host의 중복 재생을 피합니다.
 
-- 고정 Yaw/Pitch 카메라를 기준으로 이동 입력을 월드 XZ 방향으로 변환하고, 지수 감쇠 보간과 제한된 휠 줌을 적용합니다.
-- 타이틀, 방 코드, 상호작용 안내, 장비·인벤토리, 펫 장물, 수배·수색과 정산 상태 UI를 구성했습니다.
-- 발사, 아이템 획득, 절도 요청·결과, 수배, 탈출과 정산 이벤트를 2D UI 및 3D 월드 사운드 채널에 연결했습니다.
-- 건물이 카메라와 로컬 플레이어 사이를 가리면 네트워크 상태를 추가하지 않고 로컬 화면에서만 반투명하게 표시합니다.
+공식 문서: [NGO 2.7 RPC와 실행 권한](https://docs.unity.cn/Packages/com.unity.netcode.gameobjects@2.7/manual/advanced-topics/message-system/rpc.html) · [상세 요청·복제 흐름](Docs/NetworkArchitectureExample.md#c-3-아이템-획득인벤토리-반영)
 
-## 아키텍처
+### Host Migration — 새 Host 선출 이후의 게임 상태 복원
 
-### Brick · Glue · Config
-
-게임 규칙과 Unity 연결 책임을 분리했습니다.
-
-- **Brick**: 계산, 판정과 상태 전이처럼 Unity 오브젝트가 필요 없는 순수 규칙
-- **Glue**: MonoBehaviour, NetworkBehaviour, RPC, Transform, UI와 Scene 연결
-- **Config**: 기획 수치와 교체 가능한 에셋 참조를 보관하는 ScriptableObject
-
-```text
-Input / Network / Scene
-          │
-          ▼
-        Glue ───── Config
-          │
-          ▼
-        Brick
-          │
-          ▼
-확정 상태를 Scene과 Network에 적용
+```mermaid
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","darkMode":true,"background":"#111827","primaryColor":"#1E3553","primaryTextColor":"#FFFFFF","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","textColor":"#FFFFFF","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","actorLineColor":"#7189A8","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","edgeLabelBackground":"#111827"},"flowchart":{"nodeSpacing":24,"rankSpacing":28,"padding":12,"wrappingWidth":300},"sequence":{"actorMargin":30,"width":120,"height":44,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":19,"messageFontSize":18,"noteFontSize":18},"themeCSS":"text, tspan { fill: #FFFFFF !important; } .nodeLabel, .nodeLabel p, .edgeLabel, .edgeLabel p { color: #FFFFFF !important; } .messageText, .noteText { fill: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2px !important; } .actor-line { stroke: #7189A8 !important; }"}}%%
+flowchart TD
+    A["① Host 연결 단절"]
+    B["② MPS Host 변경 확인<br/>Relay / NGO 재구성"]
+    C["③ 같은 Run의 상태 비교<br/>Migration Snapshot<br/>Cloud 체크포인트"]
+    D["④ 최신 유효 Snapshot 복원<br/>월드 · 플레이어 · 남은 시간<br/>런타임 참조 재연결"]
+    E["⑤ Client 재접속 · 상태 복제<br/>복구 완료 확인 후 플레이 재개"]
+    A --> B --> C --> D --> E
+    classDef default fill:#1E3553,stroke:#93B4DB,stroke-width:2px,color:#FFFFFF
+    linkStyle default stroke:#7189A8,stroke-width:2px,color:#FFFFFF
 ```
 
-- 거리 계산, 탄창·재장전, 경찰 인지, 정산 멱등성과 Snapshot 직렬화 같은 규칙을 Unity Scene 없이 EditMode에서 테스트할 수 있습니다.
-- 런타임 갱신은 기능마다 독립 `Update`를 추가하지 않고 중앙 업데이트 관리자가 각 Glue의 `ManualUpdate`를 호출합니다.
-- 시각·음향 효과는 입력 시점이 아니라 서버의 성공 확정 또는 복제된 상태 전환을 기준으로 재생합니다.
+새 Host 선출만으로는 이전 Host 메모리의 월드가 복구되지 않으므로, 프로젝트에서 Snapshot 수집·검증·복원 처리를 작성했습니다. 현재 방의 Run을 유지하고 남은 시간과 안정적인 개체 ID로 상태를 복원하며, 이전 세션의 늦은 응답은 세대 검사로 차단합니다.
 
-### 데이터 중심 설계와 복원
+공식 문서: [MPS Host Migration](https://docs.unity.com/en-us/mps-sdk/session-host-migration) · [프로젝트 복원 흐름](Docs/NetworkArchitectureExample.md#c-7-host-migration-같은-방의-상태-이어가기)
 
-- 네트워크와 Snapshot에는 프리팹 참조 대신 안정적인 아이템·장비 정의 ID를 저장합니다.
-- `ItemCatalog`, `EquipmentCatalog`, `RecoveryCatalog`가 ID를 현재 데이터와 프리팹으로 복원합니다.
-- 장비 인스턴스는 고유 Instance ID로 구분해 같은 종류의 장비도 개별 상태로 처리합니다.
-- 알 수 없는 ID를 현재 기본 프리팹으로 조용히 대체하지 않고 복원 실패로 분리합니다.
-- Host Migration 타이머는 이전 Host의 절대 시각 대신 남은 시간으로 저장해 Host 간 시간축 차이에 대응합니다.
+### Cloud 정산 — 응답이 끊겨도 같은 보상을 다시 지급하지 않기
 
-## 서버 권한 아이템 획득 흐름
-
-```text
-소유 Client가 Interact 입력
-→ ServerRpc 요청
-→ 서버가 NetworkObjectId로 대상 조회
-→ 요청 플레이어의 센서 범위 및 CanInteract 재검증
-→ 잠금 임계 구역에서 TryInteract 실행
-→ 서버 PlayerInventory 원본 변경
-→ NetworkList에 전송용 슬롯 복사
-→ 소유 Client의 PlayerInventory 복제본 갱신
+```mermaid
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","darkMode":true,"background":"#111827","primaryColor":"#1E3553","primaryTextColor":"#FFFFFF","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","textColor":"#FFFFFF","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","actorLineColor":"#7189A8","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","edgeLabelBackground":"#111827"},"flowchart":{"nodeSpacing":24,"rankSpacing":28,"padding":12,"wrappingWidth":300},"sequence":{"actorMargin":30,"width":120,"height":44,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":19,"messageFontSize":18,"noteFontSize":18},"themeCSS":"text, tspan { fill: #FFFFFF !important; } .nodeLabel, .nodeLabel p, .edgeLabel, .edgeLabel p { color: #FFFFFF !important; } .messageText, .noteText { fill: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2px !important; } .actor-line { stroke: #7189A8 !important; }"}}%%
+flowchart TD
+    A["① Host가 탈출 조건 확인<br/>정산 번호 · 지급 내용 고정"]
+    B["② 기존 지급 결과 확인"]
+    C["③ 미지급이면 정산 요청 접수<br/>미완료 정산 요청 보존<br/>정산 준비 체크포인트 확인"]
+    D["④ 접수된 정산 요청 처리 재개<br/>개인 잔액 반영<br/>정산 영수증 보존"]
+    E["⑤ Host가 지급 결과 확인"]
+    F["⑥ 월드 정리<br/>정산 완료 체크포인트 확인<br/>탈출 성공 통지 · Session 퇴장"]
+    A --> B
+    B -->|미지급| C
+    C --> D --> E
+    B -->|지급 완료| E
+    E --> F
+    classDef default fill:#1E3553,stroke:#93B4DB,stroke-width:2px,color:#FFFFFF
+    linkStyle default stroke:#7189A8,stroke-width:2px,color:#FFFFFF
 ```
 
-서버는 모든 플레이어의 권위 있는 인벤토리 원본을 보유합니다. 각 클라이언트는 `Owner` 읽기 권한으로 자기 플레이어의 인벤토리만 전달받습니다.
+응답 유실로 지급 여부를 알 수 없어도 같은 정산 번호와 영수증을 대조하며, 지갑 변경 번호와 조건부 저장으로 오래된 값의 덮어쓰기를 막습니다. 직접 RDB 서버를 운영하는 대신 계정별 지갑과 Run별 월드를 Cloud Save에 보존하고 Cloud Code로 쓰기를 검증하지만, 지갑·월드·전적을 하나의 트랜잭션으로 묶은 구조는 아닙니다.
 
-사용자 정의 네트워크 슬롯은 `INetworkSerializable`을 구현하여 `ItemId`와 `Quantity`의 직렬화 순서를 명시했습니다. 실제 `ItemData` 에셋을 전송하지 않고 식별자와 현재 수량만 전달합니다.
+공식 문서: [Cloud Code를 통한 데이터 저장](https://docs.unity.com/en-us/cloud-save/tutorials/cloud-code) · [Cloud Save 조건부 저장](https://docs.unity.com/en-us/cloud-save/concepts/write-locks) · [상세 정산·용어 설명](Docs/NetworkArchitectureExample.md#c-4-탈출개인-잔액완료-전적)
 
-## 어려웠던 점과 해결 과정
+### 코드 구조 — Brick · Glue · Config
 
-### 1. 갑작스러운 Host 이탈 후 같은 게임 상태 이어가기
+**Brick은 계산·판정·상태 전이, Glue는 Unity·네트워크·UI 연결, Config는 수치와 에셋 참조**를 담당합니다. 중앙 갱신의 `ManualUpdate`와 확정 이벤트를 재사용하고, 저장에는 안정적인 정의·개체 ID를 사용해 런타임 참조와 분리했습니다.
 
-- **문제점**: 새 Host가 선출돼도 NGO 연결만 다시 시작하면 이전 Host 메모리의 플레이어·펫·건물·아이템 상태는 사라집니다.
-- **원인**: Session의 호스트 선출과 게임 월드 복원은 서로 다른 책임이며 Relay 재구성과 Snapshot 적용 순서도 맞아야 했습니다.
-- **해결 과정**: Unity Host Migration 이벤트를 기준으로 네트워크 역할을 전환하고, Session Snapshot과 Cloud 체크포인트 중 최신 권위 상태를 선택했습니다. 새 Relay 구성 후 Snapshot을 적용하고 Client 재연결을 진행하도록 복구 단계를 명시했습니다.
-- **결과**: 명시적 Host 이탈과 복구 테스트에서 같은 Run ID와 월드 상태를 이어가는 흐름을 확인했습니다.
+[전체 흐름·저장 위치·설계 선택 보기](Docs/NetworkArchitectureExample.md)
 
-### 2. 재시도 가능한 Cloud 정산의 중복 지급 방지
+## 개발 환경과 실행 참고
 
-- **문제점**: 탈출 정산 응답이 끊기면 Client는 실패로 보지만 Cloud에는 이미 잔액이 반영됐을 수 있어 재시도 시 중복 지급 위험이 있습니다.
-- **해결 과정**: 정산마다 안정적인 ID를 부여하고 완료 저널과 지갑 Revision/CAS를 함께 확인했습니다. Cloud 성공을 확인한 뒤에만 펫 장물과 반납 아이템을 제거하고, 재시도는 기존 완료 결과를 재사용하도록 순서를 고정했습니다.
-- **결과**: 연결 복구와 요청 재시도에도 같은 정산이 한 번만 반영되는 구조를 만들었습니다.
+| 구분 | 사용 기술 |
+|---|---|
+| Editor / 플랫폼 | Unity 6.3 LTS · 6000.3.19f1 / PC |
+| 네트워크 | NGO 2.7.0 · MPS 1.2.0 · Relay / Lobby · Authentication 3.7.4 |
+| Cloud | Cloud Save 3.4.1 · Cloud Code 2.10.2 |
+| 게임·화면 | AI Navigation 2.0.13 · URP 17.3.0 · Input System 1.19.0 · uGUI / TextMesh Pro |
+| 개발 도구 | Multiplayer Play Mode 1.3.3 |
 
-### 3. 서버 판정과 모든 Client의 연출 일치
+`Assets/Scenes/Kenney_City2x2_Online.unity`에서 온라인 플레이를 시작합니다. 다른 Unity Cloud 프로젝트로 실행하려면 Services 연결, 계정 인증, Cloud Code 모듈 배포와 Host Migration의 Dashboard 설정을 해당 환경에 맞춰야 합니다.
 
-- **문제점**: 입력 순간에 총성이나 성공음을 재생하면 서버가 요청을 거절해도 연출이 보이고, Host에서는 서버·클라이언트 경로가 겹쳐 두 번 재생될 수 있습니다.
-- **해결 과정**: 사격, 아이템 획득, 절도와 정산이 서버에서 확정된 뒤 RPC 또는 복제 상태 변화로 연출 이벤트를 전달했습니다.
-- **결과**: Host와 Client가 같은 결과를 보고 총구 섬광과 효과음을 한 번씩 재생합니다.
-
-### 4. 동일 아이템 동시 획득
-
-두 플레이어가 같은 아이템을 동시에 요청하는 경쟁 상태를 고려했습니다. 같은 아이템의 `CanInteract` 검사와 실제 지급을 하나의 `lock` 임계 구역으로 묶어 요청을 순차 처리합니다.
-
-먼저 들어온 요청이 수량을 변경한 뒤 다음 요청이 최신 서버 상태를 다시 검사하므로, 수량이 부족한 아이템이 두 플레이어에게 중복 지급되지 않습니다. 아이템마다 별도의 잠금 객체를 사용하여 서로 다른 아이템의 상호작용은 독립적으로 처리합니다.
-
-## 테스트 및 검증
-
-- Brick 규칙을 대상으로 인벤토리, 동시 획득, 장비, 경찰·펫 정책, 정산 저널, 지갑 준비, 복원 카탈로그와 Migration EditMode 테스트를 구성했습니다.
-- Multiplayer Play Mode 3인 환경에서 Host와 Client의 개별 지갑, 동전·장물 정산, Revision 증가와 세션 재입장을 확인했습니다.
-- Client 단절·재접속, 명시적 Host 이탈, 후발 참가와 Snapshot 복원 흐름을 플레이 테스트했습니다.
-- 아이템 획득·반납, 경찰 순찰·수색·전투, 펫 절도와 탈출까지 연결한 회귀 테스트를 진행했습니다.
-- 현재 커밋 기준 Unity 스크립트 재컴파일 오류가 없음을 확인했습니다.
-
-## 현재 완성 상태와 제한
-
-- 방 생성부터 코드 참가, 절도, 경찰 대응, 장비·아이템 획득, 탈출 정산과 타이틀 복귀까지 핵심 플레이 흐름을 연결했습니다.
-- 로컬 Multiplayer Play Mode 기반 기능 검증은 완료했으며 최종 플레이 영상과 README 이미지는 추가할 예정입니다.
-- Host Migration의 서버 선출 시간은 로컬 코드뿐 아니라 Unity Dashboard 환경 설정에도 의존합니다.
-- 기존 Relay allocation이 만료될 정도의 장시간 단절 복구와 서로 다른 실제 PC·네트워크 환경은 추가 검증이 필요합니다.
-- 현재 Host 구조는 전용 서버 수준의 부정행위 방지나 계정 간 현상금 담합 방지를 목표로 하지 않습니다.
-- AudioMixer, 사용자 음량 설정과 BGM은 후속 연출 개선 범위입니다.
-
-## 저장소 실행 참고
-
-이 프로젝트는 Unity Authentication, Multiplayer Services, Relay, Cloud Save와 Cloud Code 설정을 사용합니다. 다른 Unity Cloud 프로젝트에서 실행하려면 Services 연결, Cloud Code 배포 및 Host Migration Dashboard 설정을 해당 환경에 맞게 구성해야 합니다.
+Host 구조는 플레이어 PC의 성능과 신뢰성에 의존하며, 전용 서버 수준의 부정행위 방지를 제공하지 않습니다. Host 선출 시간은 서비스 설정에 영향을 받고, 마지막 체크포인트 이후의 변경까지 무손실 복구하는 구조는 아닙니다.
