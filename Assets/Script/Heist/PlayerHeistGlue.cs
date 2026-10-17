@@ -35,7 +35,9 @@ namespace EchoZone.Heist
         { if (IsServer && IsSpawned) feedback.Value = new FixedString128Bytes("펫 압수. 절도 현장 적발로 수배되었습니다."); }
         /// <summary>서버의 단일 체포 판정에서 현상금을 지급합니다.</summary>
         public void AddBountyServer(int amount)
-        { if (IsServer && IsSpawned && amount > 0) { wallet?.CreditServer(amount); feedback.Value = new FixedString128Bytes($"체포 현상금 +{amount:N0}"); NotifySoundServer(EchoZone.Audio.GameplaySoundId.RewardReceived); } }
+        { if (IsServer && IsSpawned && amount > 0) { if (wallet != null && wallet.CreditServer(amount))
+                    HeistWorldGlue.Instance?.PlayRecordFor(NetworkObject)?.Reward(System.Guid.NewGuid().ToString("N"), amount, true);
+                feedback.Value = new FixedString128Bytes($"체포 현상금 +{amount:N0}"); NotifySoundServer(EchoZone.Audio.GameplaySoundId.RewardReceived); } }
         /// <summary>이전 확정 잔액과 현재 수입·지출을 포함한 개인 지갑입니다.</summary>
         public long RewardMoney => wallet != null ? wallet.Balance : 0;
         /// <summary>최근 서버 결과 문자열입니다.</summary>

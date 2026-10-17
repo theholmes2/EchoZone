@@ -2,6 +2,16 @@
 public sealed class TitleReturnBrick
 {
     private bool awaitingReturn;
+    private bool wasAtLocalTitle;
+
+    /// <summary>명시적 타이틀 복귀의 첫 갱신만 메뉴를 열고, 이후 참가 코드 입력 화면은 유지합니다.</summary>
+    public bool ShouldEnterLocalTitle(bool atLocalTitle)
+    {
+        bool entered = atLocalTitle && !wasAtLocalTitle;
+        wasAtLocalTitle = atLocalTitle;
+        if (entered) awaitingReturn = false;
+        return entered;
+    }
 
     /// <summary>네트워크 종료가 완료된 첫 프레임만 반환하며 코드 입력 중에는 메뉴를 덮어쓰지 않습니다.</summary>
     public bool ShouldReturn(bool connected, bool recovering, bool shuttingDown, bool requestPending)

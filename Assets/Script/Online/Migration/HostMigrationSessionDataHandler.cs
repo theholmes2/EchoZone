@@ -16,6 +16,13 @@ namespace EchoZone.Online.Migration
         private readonly HostMigrationSnapshotJsonSerializer serializer;
         /// <summary>snapshotReceived 값을 저장합니다.</summary>
         private readonly Action<HostMigrationSnapshot> snapshotReceived;
+        private Func<bool> isCurrent;
+
+        /// <summary>각 Session 수명에 묶인 핸들러를 만들어 이전 Session의 늦은 Snapshot을 차단합니다.</summary>
+        public HostMigrationSessionDataHandler ForLifetime(Func<bool> current)
+        {
+            return new HostMigrationSessionDataHandler(collector, snapshotReceived) { isCurrent = current };
+        }
 
         /// <summary>HostMigrationSessionDataHandler 작업을 수행합니다.</summary>
         public HostMigrationSessionDataHandler(
@@ -30,6 +37,7 @@ namespace EchoZone.Online.Migration
         /// <summary>현재 Host의 권위 상태를 UTF-8 JSON 바이트로 생성합니다.</summary>
         public byte[] Generate()
         {
+            if (isCurrent != null && !isCurrent()) return Array.Empty<byte>();
             if (collector == null ||
                 !collector.TryCollect(out HostMigrationSnapshot snapshot))
             {
@@ -48,6 +56,7 @@ namespace EchoZone.Online.Migration
         /// </summary>
         public void Apply(byte[] migrationData)
         {
+            if (isCurrent != null && !isCurrent()) return;
             if (migrationData == null || migrationData.Length == 0)
             {
                 return;

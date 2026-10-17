@@ -1,4 +1,6 @@
 using EchoZone.Online.Relay;
+using EchoZone.Online.Authentication;
+using EchoZone.Online.Loading;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,6 +9,15 @@ using UnityEngine.UI;
 /// <summary>Canvas 타이틀 화면의 방 생성·코드 참가·종료 입력을 Relay Session 흐름에 연결합니다.</summary>
 public sealed class NetworkStartUI : MonoBehaviour
 {
+    /// <summary>방 진입 전에 확인할 실행 중 공유 계정 인증입니다.</summary>
+    [SerializeField] private UnityAuthenticationGlue authenticationGlue;
+    /// <summary>기존 타이틀 갱신 순서에서 계정 입력 화면을 갱신합니다.</summary>
+    [SerializeField] private AccountLoginGlue accountLoginGlue;
+    private bool wasAuthenticated;
+    private LoadingOverlayGlue loading;
+    /// <summary>기존 타이틀 갱신에서만 동작하는 계정별 전적 화면 연결입니다.</summary>
+    private EchoZone.Heist.PlayHistoryGlue[] histories;
+    private bool HasAuthenticatedAccount => authenticationGlue != null && authenticationGlue.Service.IsSignedIn;
     [SerializeField] private RelaySessionGlue relaySessionGlue;
     [SerializeField] private GameObject titleCanvas;
     [SerializeField] private GameObject mainMenuPanel;
@@ -37,6 +48,8 @@ public sealed class NetworkStartUI : MonoBehaviour
     /// <summary>Canvas 버튼 이벤트를 네트워크 명령에 연결하고 첫 메뉴를 표시합니다.</summary>
     private void Awake()
     {
+        loading = GetComponent<LoadingOverlayGlue>();
+        histories = GetComponents<EchoZone.Heist.PlayHistoryGlue>();
         createRoomButton?.onClick.AddListener(CreateRoom);
         showJoinButton?.onClick.AddListener(ShowJoinMenu);
         quitButton?.onClick.AddListener(QuitGame);
@@ -46,6 +59,7 @@ public sealed class NetworkStartUI : MonoBehaviour
         NetworkManager manager = NetworkManager.Singleton;
         wasConnected = manager != null && (manager.IsClient || manager.IsServer);
         ShowMainMenu();
+        SetButtonsInteractable(false);
     }
 
     /// <summary>등록한 버튼과 입력 이벤트를 제거합니다.</summary>
@@ -62,7 +76,58 @@ public sealed class NetworkStartUI : MonoBehaviour
     /// <summary>연결·복구 상태에 맞춰 타이틀 메뉴와 상태 카드를 전환합니다.</summary>
     private void Update()
     {
+        loading?.ManualUpdate(Time.unscaledDeltaTime);
+        relaySessionGlue?.ManualLoadingUpdate();
+        var historyManager = NetworkManager.Singleton;
+        bool historySession = historyManager != null && (historyManager.IsClient || historyManager.IsServer || historyManager.ShutdownInProgress);
+        foreach (var history in histories) history.ManualUpdate(HasAuthenticatedAccount && !requestPending &&
+            (loading == null || !loading.IsBlocking && loading.CanStartOperation) &&
+            (relaySessionGlue == null || !relaySessionGlue.IsReconnecting && !relaySessionGlue.IsMigratingHost) &&
+            (!historySession || relaySessionGlue != null && relaySessionGlue.IsAtLocalTitle));
+        bool loadingBlocksMenu = loading != null && loading.IsBlocking;
+        bool atLocalTitle = relaySessionGlue != null && relaySessionGlue.IsAtLocalTitle;
+        bool enteredLocalTitle = titleReturn.ShouldEnterLocalTitle(atLocalTitle && !loadingBlocksMenu);
+        if (loadingBlocksMenu)
+        {
+            mainMenuPanel?.SetActive(false);
+            joinMenuPanel?.SetActive(false);
+            accountLoginGlue?.ManualUpdate(true);
+            return;
+        }
+        if (atLocalTitle)
+        {
+            requestPending = false;
+            if (enteredLocalTitle) ShowMainMenu();
+            accountLoginGlue?.ManualUpdate(false);
+            SetButtonsInteractable(loading == null || loading.CanStartOperation);
+            bool draining = loading != null && !loading.IsDrained;
+            statusPanel?.SetActive(draining);
+            if (draining && statusText != null) statusText.text = "이전 온라인 요청을 정리하는 중입니다. 종료 후 다시 입장할 수 있습니다.";
+            return;
+        }
         NetworkManager manager = NetworkManager.Singleton;
+        bool sessionActive = manager != null && (manager.IsClient || manager.IsServer || manager.ShutdownInProgress);
+        sessionActive |= relaySessionGlue != null && (relaySessionGlue.IsReconnecting || relaySessionGlue.IsMigratingHost);
+        accountLoginGlue?.ManualUpdate(sessionActive);
+        bool authenticated = HasAuthenticatedAccount;
+        if (!sessionActive && !authenticated)
+        {
+            mainMenuPanel?.SetActive(false);
+            joinMenuPanel?.SetActive(false);
+            bool admissionFailed = relaySessionGlue != null && !string.IsNullOrEmpty(relaySessionGlue.AdmissionError);
+            statusPanel?.SetActive(admissionFailed);
+            if (admissionFailed && statusText != null) statusText.text = relaySessionGlue.AdmissionError;
+            roomCodePanel?.SetActive(false);
+            SetButtonsInteractable(false);
+            wasAuthenticated = false;
+            return;
+        }
+        if (authenticated && !wasAuthenticated && !sessionActive)
+        {
+            ShowMainMenu();
+            SetButtonsInteractable(true);
+        }
+        wasAuthenticated = authenticated;
         if (manager == null || titleCanvas == null) return;
         bool recovering = relaySessionGlue != null &&
             (relaySessionGlue.IsReconnecting || relaySessionGlue.IsMigratingHost);
@@ -106,7 +171,7 @@ public sealed class NetworkStartUI : MonoBehaviour
     /// <summary>방 생성·참가·종료 버튼이 있는 첫 화면을 표시합니다.</summary>
     private void ShowMainMenu()
     {
-        mainMenuPanel?.SetActive(true);
+        mainMenuPanel?.SetActive(HasAuthenticatedAccount);
         joinMenuPanel?.SetActive(false);
         statusPanel?.SetActive(false);
         roomCodePanel?.SetActive(false);
@@ -115,6 +180,7 @@ public sealed class NetworkStartUI : MonoBehaviour
     /// <summary>참가 코드 입력 화면을 표시하고 입력창에 포커스를 줍니다.</summary>
     private void ShowJoinMenu()
     {
+        if (!HasAuthenticatedAccount) return;
         mainMenuPanel?.SetActive(false);
         joinMenuPanel?.SetActive(true);
         statusPanel?.SetActive(false);
@@ -125,9 +191,13 @@ public sealed class NetworkStartUI : MonoBehaviour
     /// <summary>새 Relay 방과 Host를 생성합니다.</summary>
     private async void CreateRoom()
     {
-        if (requestPending || relaySessionGlue == null) return;
+        if (!HasAuthenticatedAccount || loading != null && !loading.CanStartOperation || requestPending || relaySessionGlue == null) return;
         requestPending = true; SetButtonsInteractable(false);
-        bool succeeded = await relaySessionGlue.CreateHostSessionAsync();
+        var request = relaySessionGlue.CreateHostSessionAsync();
+        int generation = relaySessionGlue.OnlineGeneration;
+        bool succeeded = await request;
+        if (this == null) return;
+        if (generation != relaySessionGlue.OnlineGeneration) { requestPending = false; return; }
         requestPending = false;
         if (!succeeded) ShowMainMenu();
         SetButtonsInteractable(true);
@@ -137,9 +207,13 @@ public sealed class NetworkStartUI : MonoBehaviour
     private async void JoinRoom()
     {
         string code = joinCodeInput != null ? joinCodeInput.text.Trim() : string.Empty;
-        if (requestPending || relaySessionGlue == null || string.IsNullOrEmpty(code)) return;
+        if (!HasAuthenticatedAccount || loading != null && !loading.CanStartOperation || requestPending || relaySessionGlue == null || string.IsNullOrEmpty(code)) return;
         requestPending = true; SetButtonsInteractable(false);
-        bool succeeded = await relaySessionGlue.JoinSessionAsync(code);
+        var request = relaySessionGlue.JoinSessionAsync(code);
+        int generation = relaySessionGlue.OnlineGeneration;
+        bool succeeded = await request;
+        if (this == null) return;
+        if (generation != relaySessionGlue.OnlineGeneration) { requestPending = false; return; }
         requestPending = false;
         if (!succeeded) ShowJoinMenu();
         SetButtonsInteractable(true);
@@ -149,12 +223,13 @@ public sealed class NetworkStartUI : MonoBehaviour
     private void HandleJoinCodeChanged(string value)
     {
         if (joinRoomButton != null)
-            joinRoomButton.interactable = !requestPending && !string.IsNullOrWhiteSpace(value);
+            joinRoomButton.interactable = HasAuthenticatedAccount && !requestPending && !string.IsNullOrWhiteSpace(value);
     }
 
     /// <summary>비동기 요청 중 메뉴 버튼의 중복 입력을 막습니다.</summary>
     private void SetButtonsInteractable(bool interactable)
     {
+        interactable &= HasAuthenticatedAccount;
         if (createRoomButton != null) createRoomButton.interactable = interactable;
         if (showJoinButton != null) showJoinButton.interactable = interactable;
         if (quitButton != null) quitButton.interactable = interactable;

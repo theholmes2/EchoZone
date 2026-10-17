@@ -86,7 +86,7 @@ public sealed partial class WalletFunctions
         if (stored.Pending != null && stored.Pending.State != "Conflict")
         { SettlementJournalBrick.Commit(stored, DateTime.UtcNow.ToString("O")); changed = true; }
         if (changed) await Write(context, api, playerId, stored, writeLock!);
-        return stored;
+        return await FlushPlayHistory(context, api, playerId);
     }
 
     /// <summary>회수 체크포인트 쓰기 전에 계정에 Run 검색 인덱스를 보존합니다. 감사비를 확정 잔액에 넣지 않습니다.</summary>
@@ -124,12 +124,20 @@ public sealed partial class WalletFunctions
     /// <summary>잔액·미완료 큐·영수증은 하나의 CAS 항목으로 저장합니다. 크기 초과도 삭제 대신 보류합니다.</summary>
     private static async Task Write(IExecutionContext context, IGameApiClient api, string playerId, WalletRecord record, string writeLock)
     {
+        string json = SerializeWallet(record);
+        if (string.IsNullOrEmpty(writeLock)) throw new InvalidOperationException("Wallet write lock required.");
+        await api.CloudSaveData.SetProtectedItemBatchAsync(context, context.ServiceToken, context.ProjectId,
+            playerId, new SetItemBatchBody(new List<SetItemBody> {
+                new SetItemBody(Key, json, writeLock), new SetItemBody(RankingBalanceKey, record.Balance) }));
+    }
+
+    /// <summary>전적 저장 완료 배치에서도 기존 지갑 봉투 안전 크기를 동일하게 검사합니다.</summary>
+    private static string SerializeWallet(WalletRecord record)
+    {
         string json = JsonSerializer.Serialize(record);
         if (System.Text.Encoding.UTF8.GetByteCount(json) > 200000)
             throw new InvalidOperationException("Receipt archive required; manual reconciliation required.");
-        if (string.IsNullOrEmpty(writeLock)) throw new InvalidOperationException("Wallet write lock required.");
-        await api.CloudSaveData.SetProtectedItemAsync(context, context.ServiceToken, context.ProjectId,
-            playerId, new SetItemBody(Key, json, writeLock));
+        return json;
     }
 
     /// <summary>같은 정산의 재전송은 재지급하지 않고, 오래된 버전의 덮어쓰기는 거절합니다.</summary>

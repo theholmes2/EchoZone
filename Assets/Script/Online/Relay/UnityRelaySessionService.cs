@@ -17,6 +17,29 @@ namespace EchoZone.Online.Relay
         private const string RunIdPropertyKey = "echozone_run_id";
         /// <summary>현재 플레이어가 생성하거나 참가한 Session입니다.</summary>
         private ISession activeSession;
+        private int requestGeneration;
+        private int migrationLifetime;
+        private Action<string> hostChangedHandler;
+        private Action migratedHandler;
+        private Action<SessionError> migrationFailedHandler;
+        /// <summary>중단된 요청의 늦은 Session 결과가 현재 연결을 덮어쓰지 못하게 합니다.</summary>
+        public void InvalidatePendingRequests() => requestGeneration++;
+
+        /// <summary>서버 Leave 응답과 별개로 로컬 이벤트와 Session 참조를 해제합니다.</summary>
+        public void DetachLocalSession()
+        {
+            requestGeneration++;
+            ReplaceActiveSession(null);
+            lastSessionId = string.Empty;
+        }
+
+        private async Task<bool> AdoptSessionAsync(ISession session, int generation)
+        {
+            if (generation == requestGeneration) { ReplaceActiveSession(session); return session != null; }
+            try { if (session != null && session.IsMember) await session.LeaveAsync(); }
+            catch { /* 타이틀 복귀한 이전 세션의 서버 잔여 멤버십은 서비스 만료 정책에 맡깁니다. */ }
+            return false;
+        }
 
         /// <summary>연결이 끊긴 뒤에도 재접속에 사용할 마지막 Session ID입니다.</summary>
         private string lastSessionId = string.Empty;
@@ -40,12 +63,17 @@ namespace EchoZone.Online.Relay
         /// <summary>로비를 떠나지 않고 서버 상태와 이벤트 구독 연결을 갱신합니다.</summary>
         public async Task<bool> RefreshSessionForRecoveryAsync()
         {
+            int generation = requestGeneration;
+            var session = activeSession;
+            if (session != null) ReplaceActiveSession(session);
             try
             {
-                if (activeSession == null)
+                if (session == null)
                     throw new InvalidOperationException("No Session available for recovery.");
-                await activeSession.RefreshAsync();
-                await activeSession.ReconnectAsync();
+                await session.RefreshAsync();
+                if (generation != requestGeneration || session != activeSession) return false;
+                await session.ReconnectAsync();
+                if (generation != requestGeneration || session != activeSession) return false;
                 LastErrorMessage = string.Empty;
                 return true;
             }
@@ -135,6 +163,7 @@ namespace EchoZone.Online.Relay
         public async Task<bool> CreateHostSessionAsync(
             RelaySessionConfig config)
         {
+            int generation = requestGeneration;
             LastErrorMessage = string.Empty;
 
             if (config == null)
@@ -158,14 +187,15 @@ namespace EchoZone.Online.Relay
 
                 if (migrationDataHandler != null)
                 {
+                    int lifetime = ++migrationLifetime;
                     options.WithHostMigration(
-                        migrationDataHandler,
+                        migrationDataHandler.ForLifetime(() => lifetime == migrationLifetime &&
+                            (generation == requestGeneration || activeSession != null)),
                         migrationUploadInterval,
                         migrationDataTimeout);
                 }
 
-                ReplaceActiveSession(
-                    await MultiplayerService.Instance.CreateSessionAsync(options));
+                if (!await AdoptSessionAsync(await MultiplayerService.Instance.CreateSessionAsync(options), generation)) return false;
 
                 lastSessionId = activeSession != null
                     ? activeSession.Id
@@ -187,6 +217,7 @@ namespace EchoZone.Online.Relay
         /// <returns>Session 참가와 NGO Client 연결이 완료되었으면 <see langword="true"/>입니다.</returns>
         public async Task<bool> JoinSessionAsync(string joinCode)
         {
+            int generation = requestGeneration;
             LastErrorMessage = string.Empty;
 
             if (string.IsNullOrWhiteSpace(joinCode))
@@ -207,11 +238,12 @@ namespace EchoZone.Online.Relay
                     joinCode.Trim().ToUpperInvariant();
 
                 await LeaveMatchingMembershipAsync(normalizedJoinCode);
+                if (generation != requestGeneration) return false;
 
-                ReplaceActiveSession(await MultiplayerService.Instance
+                if (!await AdoptSessionAsync(await MultiplayerService.Instance
                     .JoinSessionByCodeAsync(
                         normalizedJoinCode,
-                        CreateJoinOptions()));
+                        CreateJoinOptions()), generation)) return false;
 
                 lastSessionId = activeSession != null
                     ? activeSession.Id
@@ -268,6 +300,8 @@ namespace EchoZone.Online.Relay
         /// <returns>같은 Session 참가와 NGO Client 재시작이 완료되었으면 <see langword="true"/>입니다.</returns>
         public async Task<bool> ReconnectSessionAsync()
         {
+            int generation = requestGeneration;
+            string sessionId = lastSessionId;
             LastErrorMessage = string.Empty;
 
             if (string.IsNullOrEmpty(lastSessionId))
@@ -283,8 +317,9 @@ namespace EchoZone.Online.Relay
                     return false;
                 }
 
-                ReplaceActiveSession(await MultiplayerService.Instance
-                    .JoinSessionByIdAsync(lastSessionId, CreateJoinOptions()));
+                if (generation != requestGeneration) return false;
+                if (!await AdoptSessionAsync(await MultiplayerService.Instance
+                    .JoinSessionByIdAsync(sessionId, CreateJoinOptions()), generation)) return false;
 
                 return activeSession != null;
             }
@@ -298,6 +333,7 @@ namespace EchoZone.Online.Relay
         /// <summary>남아 있는 SDK Session을 정상 정리합니다. 정리 실패를 참가 성공으로 숨기지 않습니다.</summary>
         public async Task<bool> LeaveCurrentSessionAsync()
         {
+            var leaving = activeSession;
             if (activeSession == null)
             {
                 return true;
@@ -305,11 +341,11 @@ namespace EchoZone.Online.Relay
 
             try
             {
-                if (activeSession.IsMember && activeSession.State != SessionState.Deleted)
+                if (leaving.IsMember && leaving.State != SessionState.Deleted)
                 {
-                    await activeSession.LeaveAsync();
+                    await leaving.LeaveAsync();
                 }
-                ReplaceActiveSession(null);
+                if (activeSession == leaving) ReplaceActiveSession(null);
                 return true;
             }
             catch (Exception exception)
@@ -343,11 +379,14 @@ namespace EchoZone.Online.Relay
         /// <summary>일반 참가에도 동일한 Host Migration 데이터 핸들러를 설치합니다.</summary>
         private JoinSessionOptions CreateJoinOptions()
         {
+            int generation = requestGeneration;
             JoinSessionOptions options = new();
             if (migrationDataHandler != null)
             {
+                int lifetime = ++migrationLifetime;
                 options.WithHostMigration(
-                    migrationDataHandler,
+                    migrationDataHandler.ForLifetime(() => lifetime == migrationLifetime &&
+                        (generation == requestGeneration || activeSession != null)),
                     migrationUploadInterval,
                     migrationDataTimeout);
             }
@@ -358,21 +397,28 @@ namespace EchoZone.Online.Relay
         /// <summary>ReplaceActiveSession 작업을 수행합니다.</summary>
         private void ReplaceActiveSession(ISession nextSession)
         {
+            // 같은 세션의 재시도는 Snapshot 연결을 유지하고, 실제 퇴장에서만 폐기합니다.
+            if (nextSession == null) migrationLifetime++;
             if (activeSession != null)
             {
-                activeSession.SessionHostChanged -= HandleSessionHostChanged;
-                activeSession.SessionMigrated -= HandleSessionMigrated;
+                activeSession.SessionHostChanged -= hostChangedHandler;
+                activeSession.SessionMigrated -= migratedHandler;
                 if (activeSession.Network != null)
-                    activeSession.Network.MigrationFailed -= HandleMigrationFailed;
+                    activeSession.Network.MigrationFailed -= migrationFailedHandler;
             }
 
             activeSession = nextSession;
             if (activeSession != null)
             {
-                activeSession.SessionHostChanged += HandleSessionHostChanged;
-                activeSession.SessionMigrated += HandleSessionMigrated;
+                int generation = requestGeneration;
+                bool Current() => generation == requestGeneration && ReferenceEquals(activeSession, nextSession);
+                hostChangedHandler = value => { if (Current()) HandleSessionHostChanged(value); };
+                migratedHandler = () => { if (Current()) HandleSessionMigrated(); };
+                migrationFailedHandler = error => { if (Current()) HandleMigrationFailed(error); };
+                activeSession.SessionHostChanged += hostChangedHandler;
+                activeSession.SessionMigrated += migratedHandler;
                 if (activeSession.Network != null)
-                    activeSession.Network.MigrationFailed += HandleMigrationFailed;
+                    activeSession.Network.MigrationFailed += migrationFailedHandler;
             }
         }
 

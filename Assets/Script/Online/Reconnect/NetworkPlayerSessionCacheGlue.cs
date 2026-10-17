@@ -304,6 +304,15 @@ namespace EchoZone.Online.Reconnect
             ulong clientId,
             ReconnectCredential credential)
         {
+            // 탈출은 단절 복구가 아닌 새 회차입니다. 연결 중인 동일 계정의 중복 입장은 계속 거절합니다.
+            if (cachedStates.TryGetValue(credential.PlayerId, out var completed) &&
+                completed.Snapshot?.EscapeFinalized == true)
+            {
+                if (completed.IsConnected || !string.IsNullOrEmpty(credential.Ticket)) return false;
+                cachedStates.Remove(credential.PlayerId);
+                migrationAuthorizedPlayerIds.Remove(credential.PlayerId);
+                return true;
+            }
             if (migrationAuthorizedPlayerIds.Remove(credential.PlayerId) &&
                 cachedStates.ContainsKey(credential.PlayerId))
             {

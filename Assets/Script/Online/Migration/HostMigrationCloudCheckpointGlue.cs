@@ -23,6 +23,10 @@ namespace EchoZone.Online.Migration
 
         /// <summary>automaticSavingEnabled 값을 저장합니다.</summary>
         private bool automaticSavingEnabled;
+        private int savingGeneration;
+
+        /// <summary>확정 저장 결과를 지우지 않고 다음 주기 저장만 중단합니다.</summary>
+        public void StopAutomaticSaving() { automaticSavingEnabled = false; savingGeneration++; }
 
         /// <summary>Session 참가 이후 설정 간격으로 현재 Host만 Cloud 체크포인트를 저장합니다.</summary>
         public void StartAutomaticSaving(float intervalSeconds)
@@ -45,11 +49,12 @@ namespace EchoZone.Online.Migration
         /// <summary>RunAutomaticSavingAsync 작업을 수행합니다.</summary>
         private async Task RunAutomaticSavingAsync(float intervalSeconds)
         {
+            int generation = savingGeneration;
             int delayMilliseconds = Mathf.RoundToInt(intervalSeconds * 1000f);
-            while (automaticSavingEnabled)
+            while (automaticSavingEnabled && generation == savingGeneration)
             {
                 await Task.Delay(delayMilliseconds);
-                if (this == null || !automaticSavingEnabled)
+                if (this == null || !automaticSavingEnabled || generation != savingGeneration)
                 {
                     return;
                 }

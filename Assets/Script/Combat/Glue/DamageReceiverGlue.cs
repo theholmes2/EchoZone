@@ -38,7 +38,11 @@ namespace EchoZone.Combat.Glue
             try
             {
                 int applied = stats.ApplyDamage(healthDamage);
-                if (applied > 0) ServerDamageApplied?.Invoke(source, applied);
+                if (applied > 0)
+                {
+                    EchoZone.Heist.HeistWorldGlue.Instance?.RecordLethalDamage(NetworkObject, source);
+                    ServerDamageApplied?.Invoke(source, applied);
+                }
                 return applied;
             }
             finally { CurrentDamageSource = null; }

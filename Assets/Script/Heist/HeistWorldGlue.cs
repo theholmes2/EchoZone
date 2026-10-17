@@ -8,6 +8,15 @@ namespace EchoZone.Heist
     /// <summary>서버 장물 원장과 건물 현금·수배·감사비 동기화를 연결합니다. 현재 세션 범위의 데이터입니다.</summary>
     public sealed partial class HeistWorldGlue : NetworkBehaviour
     {
+        /// <summary>서버의 초기 준비 또는 Snapshot 적용이 실제 완료됐는지 클라이언트 로딩에 복제합니다.</summary>
+        private readonly NetworkVariable<bool> onlineWorldReady = new(false);
+        /// <summary>오브젝트가 보인다는 이유만으로 복구 완료를 추측하지 않도록 서버 확정 상태를 제공합니다.</summary>
+        public bool IsOnlineWorldReady => IsSpawned && onlineWorldReady.Value;
+        /// <summary>Relay 소유자가 실제 준비·복구 완료 지점에서만 서버 권한으로 변경합니다.</summary>
+        public void SetOnlineWorldReadyServer(bool ready)
+        {
+            if (IsServer && IsSpawned) onlineWorldReady.Value = ready;
+        }
         /// <summary>현재 실행 중인 세션의 범죄 규칙 연결점입니다.</summary>
         public static HeistWorldGlue Instance { get; private set; }
         /// <summary>공통 기획 설정입니다.</summary>
@@ -24,7 +33,7 @@ namespace EchoZone.Heist
         private readonly Dictionary<string, string> reports = new();
         /// <summary>완료된 회수·탈출 펫의 재생성을 막는 고정 ID 집합입니다.</summary>
         private readonly HashSet<string> retiredPets = new();
-        /// <summary>동일 세션의 시작 펫 중복 지급을 막는 계정 이력입니다.</summary>
+        /// <summary>현재 개인 회차의 시작 펫 중복 지급을 막으며 탈출 후 새 회차에서만 초기화하는 계정 이력입니다.</summary>
         private readonly HashSet<string> starterPets = new();
         /// <summary>최초 펫을 아직 지급하지 않은 계정만 승인합니다.</summary>
         public bool TryGrantStarter(string playerId) => IsServer && starterPets.Add(playerId);
@@ -56,7 +65,10 @@ namespace EchoZone.Heist
             if (!IsServer) return null;
             // 새 PlayerObject가 요청했을 때만 완료된 지갑을 교체합니다. 미정산 재접속 지갑은 유지합니다.
             if (!wallets.TryGetValue(playerId, out var wallet) || (wallet.Settled && (wallet.Finalized || wallet.Request == null)))
+            {
+                if (wallet != null) starterPets.Remove(playerId);
                 wallets[playerId] = wallet = new WalletSessionBrick();
+            }
             return wallet;
         }
         /// <summary>승인된 탈출 장물을 건물로 반환하지 않고 원장에서 정산 완료로 표시합니다.</summary>
@@ -97,6 +109,7 @@ namespace EchoZone.Heist
             foreach (var site in FindObjectsByType<HeistBuildingSite>(FindObjectsSortMode.None))
                 if (!sites.TryAdd(site.Id, site)) Debug.LogError($"Duplicate heist building id: {site.Id}", site);
             if (!IsServer) return;
+            onlineWorldReady.Value = false;
             worldId = null;
             walletsToVerify.Clear();
             ledger = new HeistLedgerBrick(); investigation = new PoliceInvestigationBrick();
@@ -160,7 +173,8 @@ namespace EchoZone.Heist
             if (amount <= 0) return false;
             state.Money -= amount; Write(state);
             string petId = pet.GetComponent<PetStateGlue>().PetId;
-            ledger.Record(building, petId, PlayerIdentity(player.OwnerClientId), amount);
+            string theftId = ledger.Record(building, petId, PlayerIdentity(player.OwnerClientId), amount);
+            PlayRecordFor(player)?.Theft(theftId, building, amount);
             pet.SetCargoServer(ledger.Cargo(petId));
             return true;
         }
@@ -274,7 +288,9 @@ namespace EchoZone.Heist
         {
             if (!IsServer || pet == null || !pet.IsSpawned || !pet.IsAbandonedCargo ||
                 !CanReach(reporter, pet.transform.position, config.InteractionDistance, pet.NetworkObject) || reports.ContainsKey(pet.GetComponent<PetStateGlue>().PetId)) return false;
-            reports.Add(pet.GetComponent<PetStateGlue>().PetId, PlayerIdentity(reporter.OwnerClientId)); pet.SetReportedServer(true); return true;
+            reports.Add(pet.GetComponent<PetStateGlue>().PetId, PlayerIdentity(reporter.OwnerClientId)); pet.SetReportedServer(true);
+            PlayRecordFor(reporter)?.Report(System.Guid.NewGuid().ToString("N"));
+            return true;
         }
         /// <summary>신고 접수 여부를 경찰 작업 선택에 제공합니다.</summary>
         public bool HasReport(ulong pet) => NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(pet, out var obj) &&
@@ -298,6 +314,8 @@ namespace EchoZone.Heist
             reports.Remove(petId); retiredPets.Add(petId); pet.SetReportedServer(false); pet.SetCargoServer(0); PublishWanted();
             if (reporter != null && reward > 0) Wallet(reporter)?.Credit(reward);
             var rewardWallet = reporter == null ? null : Wallet(reporter);
+            if (rewardWallet != null && !rewardWallet.Escaping && reward > 0)
+                PlayRecordFor(reporter)?.Reward("confiscate:" + petId, reward, false);
             retirementJournal.Add(new RetirementRequestRecord { SettlementId = System.Guid.NewGuid().ToString("N"),
                 SessionId = FindFirstObjectByType<EchoZone.Online.Relay.RelaySessionGlue>()?.SessionId,
                 RunId = FindFirstObjectByType<EchoZone.Online.Migration.HostMigrationSnapshotCollector>()?.RunId,

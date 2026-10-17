@@ -27,6 +27,8 @@ namespace EchoZone.Player.Network
         public void RestoreRespawn(float remaining, double now) { if (IsServer) respawnAt = remaining < 0 ? -1 : now + remaining; }
         /// <summary>같은 사망의 중복 처리와 생존 전환을 구분합니다.</summary>
         private bool wasDead;
+        /// <summary>스폰 시 현재 체력 조회는 새로운 사망 사건으로 취급하지 않습니다.</summary>
+        private bool readingSpawnHealth;
         /// <summary>사망 판정의 원본입니다.</summary>
         private PlayerStats stats;
         /// <summary>서버 이동과 로컬 입력을 차단할 Glue입니다.</summary>
@@ -52,7 +54,9 @@ namespace EchoZone.Player.Network
             wasDead = false;
             respawnAt = -1d;
             stats.AddHealthChangedListener(HandleHealthChanged);
+            readingSpawnHealth = true;
             HandleHealthChanged(0);
+            readingSpawnHealth = false;
         }
 
         /// <summary>디스폰 시 구독을 해제합니다.</summary>
@@ -85,6 +89,8 @@ namespace EchoZone.Player.Network
         private void HandleHealthChanged(int health)
         {
             bool dead = stats.IsDead;
+            if (IsServer && !readingSpawnHealth && !EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring)
+                EchoZone.Heist.HeistWorldGlue.Instance?.PlayRecordFor(NetworkObject)?.Health(dead);
             if (IsServer && dead && !wasDead)
             {
                 if (!EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring)

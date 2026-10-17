@@ -44,10 +44,22 @@ namespace EchoZone.Heist
         public string[] LedgerIds { get; set; } = Array.Empty<string>();
         /// <summary>Cloud 성공 뒤 서버가 인벤토리에서 제거할 코인·탄약·총기 목록입니다.</summary>
         public SettlementReturnItem[] Returns { get; set; } = Array.Empty<SettlementReturnItem>();
+        /// <summary>완료 목록에 전달할 동결 요약입니다. Cloud 저장 확인 후 영수증에서는 제거합니다.</summary>
+        public PlayRecordSummary PlayRecord { get; set; }
+        /// <summary>요약을 제거한 뒤에도 같은 개인 회차의 재제출을 식별합니다.</summary>
+        public string RoundId { get; set; } = "";
+        /// <summary>본문 제거 후에도 변경된 재요청을 거절할 고정 지문입니다.</summary>
+        public string PlayRecordHash { get; set; } = "";
 
         /// <summary>유효한 크기의 불변 요청만 받습니다. 동일 집합의 입력 순서는 비교에 영향을 주지 않습니다.</summary>
         public void Validate()
         {
+            if (PlayRecord != null && (PlayRecord.PlayerId != PlayerId || PlayRecord.RunId != RunId ||
+                PlayRecord.RoundId != RoundId || PlayRecord.Fingerprint() != PlayRecordHash))
+                throw new InvalidOperationException("Play record payload conflict.");
+            if ((!string.IsNullOrEmpty(RoundId) || !string.IsNullOrEmpty(PlayRecordHash)) &&
+                (!Guid.TryParseExact(RoundId, "N", out _) || PlayRecordHash.Length != 64))
+                throw new InvalidOperationException("Invalid play record identity.");
             if (string.IsNullOrWhiteSpace(PlayerId) || string.IsNullOrWhiteSpace(SessionId) ||
                 string.IsNullOrWhiteSpace(RunId) || !Guid.TryParseExact(SettlementId, "N", out _) ||
                 Balance < 0 || Balance > 1000000000000L || ExpectedRevision < 0 ||
@@ -79,6 +91,7 @@ namespace EchoZone.Heist
             var leftReturns = Returns ?? Array.Empty<SettlementReturnItem>();
             var rightReturns = other.Returns ?? Array.Empty<SettlementReturnItem>();
             return PlayerId == other.PlayerId && SessionId == other.SessionId && RunId == other.RunId &&
+                RoundId == other.RoundId && PlayRecordHash == other.PlayRecordHash &&
                 SettlementId == other.SettlementId && ExpectedRevision == other.ExpectedRevision && Balance == other.Balance &&
                 leftPets.OrderBy(s => s, StringComparer.Ordinal).SequenceEqual(rightPets.OrderBy(s => s, StringComparer.Ordinal)) &&
                 leftLedgers.OrderBy(s => s, StringComparer.Ordinal).SequenceEqual(rightLedgers.OrderBy(s => s, StringComparer.Ordinal)) &&
@@ -100,6 +113,8 @@ namespace EchoZone.Heist
         public int Attempts { get; set; }
         /// <summary>Cloud 서버의 마지막 처리 UTC입니다.</summary>
         public string LastAttemptUtc { get; set; } = "";
+        /// <summary>완료 전적이 별도 목록에 반영됐음을 보존하며 삭제된 옛 전적의 부활을 막습니다.</summary>
+        public bool PlayRecordSaved { get; set; }
     }
 
     /// <summary>기존 extraction_wallet_v1 필드를 보존하며 영속 outbox와 영수증을 함께 보관하는 봉투입니다.</summary>
@@ -146,6 +161,10 @@ namespace EchoZone.Heist
             var receipt = wallet.Receipts.Find(r => r.Request.SettlementId == request.SettlementId);
             if (receipt != null) { RequireSame(receipt.Request, request); return; }
             if (wallet.Pending != null) { RequireSame(wallet.Pending.Request, request); return; }
+            if (!string.IsNullOrEmpty(request.RoundId) && wallet.Receipts.Any(r => r.Request.RoundId == request.RoundId))
+                throw new InvalidOperationException("Round already settled; manual reconciliation required.");
+            if (!string.IsNullOrEmpty(request.RoundId) && request.PlayRecord == null)
+                throw new InvalidOperationException("New settlement requires frozen play record.");
             if (wallet.LastSettlementId == request.SettlementId)
                 throw new InvalidOperationException("Legacy receipt requires manual reconciliation.");
             if (wallet.Revision != request.ExpectedRevision) throw new InvalidOperationException("Revision conflict; manual reconciliation required.");

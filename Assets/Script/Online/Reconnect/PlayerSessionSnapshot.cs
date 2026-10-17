@@ -33,6 +33,8 @@ namespace EchoZone.Online.Reconnect
     /// <summary>재접속할 플레이어에게 복원할 서버 권한 인벤토리와 스탯 복사본입니다.</summary>
     public sealed class PlayerSessionSnapshot
     {
+        /// <summary>정산이 확정된 이전 회차의 상태를 신규 입장에 복원하지 않도록 표시합니다.</summary>
+        public bool EscapeFinalized { get; set; }
         /// <summary>플레이어의 복원 가능한 인벤토리·스탯 복사본을 생성합니다.</summary>
         /// <param name="inventorySlots">아이템 식별자와 수량 목록입니다.</param>
         /// <param name="health">저장할 현재 체력입니다.</param>

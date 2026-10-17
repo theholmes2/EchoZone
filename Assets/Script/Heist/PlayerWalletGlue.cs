@@ -65,6 +65,8 @@ namespace EchoZone.Heist
         public long WalletRevision => walletRevision.Value;
         /// <summary>탈출 승인 후 게임 행동을 막을 상태입니다.</summary>
         public bool IsEscaping => escaping.Value;
+        /// <summary>서버 정산과 월드 적용이 끝나 이전 캐릭터 상태를 재사용하지 않을지 나타냅니다.</summary>
+        public bool IsEscapeFinalized => wallet != null && wallet.Settled && wallet.Finalized;
         /// <summary>HUD에 표시할 정산 안내입니다.</summary>
         public string Status => ownerLeaveRequested ? "정산 완료 · 방 나가기 재시도 중" : status.Value.ToString();
         /// <summary>복구 전 비동기 응답을 무효화하고 복원 원장의 지갑을 다시 연결합니다.</summary>
@@ -86,11 +88,12 @@ namespace EchoZone.Heist
         /// <summary>비동기 응답이 사라진 플레이어를 변경하지 않게 무효화합니다.</summary>
         public override void OnNetworkDespawn() => generation++;
         /// <summary>서버 보상을 지갑에 적립합니다. 클라우드에는 여기서 쓰지 않습니다.</summary>
-        public void CreditServer(long amount)
+        public bool CreditServer(long amount)
         {
-            if (!IsServer || !IsSpawned || amount <= 0 || IsEscaping) return;
+            if (!IsServer || !IsSpawned || amount <= 0 || IsEscaping || wallet != null && wallet.Escaping) return false;
             if (wallet == null) earlyCredit = checked(earlyCredit + amount);
             else wallet.Credit(amount);
+            return true;
         }
         /// <summary>향후 서버 상점에서 사용할 지출 진입점입니다.</summary>
         public bool TrySpendServer(long amount) => IsServer && IsSpawned && wallet != null && wallet.TrySpend(amount);
@@ -126,6 +129,8 @@ namespace EchoZone.Heist
             walletLoaded.Value = wallet.Loaded;
             walletRevision.Value = wallet.Revision;
             escaping.Value = wallet.Escaping;
+            if (!wallet.Escaping && world.IsOnlineWorldReady && NetworkManager.ConnectedClients.ContainsKey(OwnerClientId))
+                world.PlayRecordFor(NetworkObject)?.Tick(Time.unscaledDeltaTime, true);
             if (wallet.Settled)
             {
                 if (!finalizationConfirmed)
@@ -156,13 +161,17 @@ namespace EchoZone.Heist
                 status.Value = new FixedString128Bytes("반환 품목 검증 실패 · 탈출 보류");
                 return;
             }
+            var playRecord = world.PlayRecordFor(NetworkObject);
+            if (playRecord == null) { status.Value = new FixedString128Bytes("회차 준비 중 · 탈출 보류"); return; }
             if (!wallet.BeginEscape(checked(cargo + returnCredit))) return;
+            var frozenRecord = playRecord.Freeze(cargo, DateTime.UtcNow.ToString("O"));
             GetComponent<PlayerHeistGlue>()?.NotifySoundServer(EchoZone.Audio.GameplaySoundId.ExtractionStarted);
             var petIds = new HashSet<string>(); foreach (var pet in pets) petIds.Add(pet.PetId);
             wallet.BindRequest(new SettlementRequest { PlayerId = playerId, SessionId = sessionId,
                 RunId = FindFirstObjectByType<EchoZone.Online.Migration.HostMigrationSnapshotCollector>().RunId,
                 SettlementId = wallet.SettlementId, ExpectedRevision = wallet.Revision, Balance = wallet.Balance,
-                PetIds = new List<string>(petIds).ToArray(), LedgerIds = world.SettlementLedgerIds(petIds), Returns = returns });
+                PetIds = new List<string>(petIds).ToArray(), LedgerIds = world.SettlementLedgerIds(petIds), Returns = returns,
+                PlayRecord = frozenRecord, RoundId = frozenRecord?.RoundId ?? "", PlayRecordHash = frozenRecord?.Fingerprint() ?? "" });
             escaping.Value = true; balance.Value = wallet.Balance;
             if (TryGetComponent<Rigidbody>(out var body) && !body.isKinematic)
             { body.linearVelocity = Vector3.zero; body.angularVelocity = Vector3.zero; }
@@ -271,6 +280,7 @@ namespace EchoZone.Heist
                         if (pet != null && pet.IsSpawned && Array.IndexOf(wallet.Request.PetIds, pet.PetId) >= 0)
                         { world.ExtractCargo(pet.GetComponent<PetHeistGlue>()); finished.Add(pet); }
                 wallet.MarkFinalized();
+                GetComponent<PlayerSessionCacheReporter>()?.PublishEquipmentSnapshot();
                 if (checkpoint == null || !await checkpoint.SaveCurrentCheckpointAsync())
                     throw new Exception("Completed settlement checkpoint not confirmed.");
                 if (!Current(version) || EchoZone.Online.Migration.SessionWorldMigrationGlue.IsRestoring) return;

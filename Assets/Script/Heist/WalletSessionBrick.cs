@@ -5,6 +5,11 @@ namespace EchoZone.Heist
     /// <summary>Unity와 통신을 모르는 개인 세션 지갑입니다. 장물은 탈출 승인 전 잔액에 포함하지 않습니다.</summary>
     public sealed class WalletSessionBrick
     {
+        /// <summary>기존 계정별 지갑 Snapshot과 수명을 공유하는 개인 회차입니다.</summary>
+        public PlayRecordBrick PlayRecord { get; private set; }
+        /// <summary>회차가 없는 새 입장·구형 Snapshot에만 현재 시점부터 기록을 시작합니다.</summary>
+        public PlayRecordBrick EnsurePlayRecord(string player, string world, string run, string session, string utc)
+            => PlayRecord ??= PlayRecordBrick.Start(player, world, run, session, utc);
         /// <summary>클라우드 기준 잔액을 읽었는지 나타냅니다.</summary>
         public bool Loaded { get; private set; }
         /// <summary>현재 게임의 수입과 지출을 반영한 개인 잔액입니다.</summary>
@@ -100,7 +105,7 @@ namespace EchoZone.Heist
         /// <summary>로드 전 보상까지 포함한 지갑 복사본입니다.</summary>
         public string Export() => Newtonsoft.Json.JsonConvert.SerializeObject(new State { loaded = Loaded, balance = Balance,
             revision = Revision, escaping = Escaping, settled = Settled, settlementId = SettlementId, pendingCredit = pendingCredit,
-            request = Request, finalized = Finalized, returnsApplied = ReturnsApplied });
+            request = Request, finalized = Finalized, returnsApplied = ReturnsApplied, playRecord = PlayRecord?.State });
         /// <summary>같은 세션 지갑을 새 호스트에서 복원합니다.</summary>
         public static WalletSessionBrick Restore(string json)
         {
@@ -108,7 +113,8 @@ namespace EchoZone.Heist
             if (s == null || s.balance < 0 || s.revision < 0 || s.pendingCredit < 0) throw new InvalidOperationException("Invalid migration wallet");
             return new WalletSessionBrick { Loaded = s.loaded, Balance = s.balance, Revision = s.revision, Escaping = s.escaping,
                 Settled = s.settled, SettlementId = s.settlementId, pendingCredit = s.pendingCredit, Request = s.request,
-                Finalized = s.finalized, ReturnsApplied = s.returnsApplied };
+                Finalized = s.finalized, ReturnsApplied = s.returnsApplied,
+                PlayRecord = s.playRecord == null ? null : new PlayRecordBrick(s.playRecord) };
         }
         /// <summary>지갑의 명시적 직렬화 필드입니다.</summary>
         private sealed class State
@@ -118,6 +124,8 @@ namespace EchoZone.Heist
             public string settlementId;
             /// <summary>구형 지갑에는 없는 승인 본문입니다. 누락 시 임의로 새 본문을 만들지 않습니다.</summary>
             public SettlementRequest request;
+            /// <summary>구형 Snapshot에서는 null이며 과거 행동을 역산하지 않습니다.</summary>
+            public PlayRecordState playRecord;
         }
     }
 }

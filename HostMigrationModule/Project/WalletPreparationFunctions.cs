@@ -21,6 +21,7 @@ public sealed partial class WalletFunctions
         var result = await Resume(context, api, player);
         if (result.Pending != null || result.Recoveries.Any(r => r.State != "CheckpointConfirmed"))
             throw new InvalidOperationException("Wallet reconciliation required before joining.");
+        await RefreshRankingIndex(context, api, player);
         return result;
     }
 }

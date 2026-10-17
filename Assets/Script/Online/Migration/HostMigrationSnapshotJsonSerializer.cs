@@ -86,7 +86,8 @@ namespace EchoZone.Online.Migration
                     health = player.State.Health,
                     stamina = player.State.Stamina,
                     mana = player.State.Mana,
-                    equipmentJson = player.State.EquipmentJson
+                    equipmentJson = player.State.EquipmentJson,
+                    escapeFinalized = player.State.EscapeFinalized
                 };
 
                 for (int slotIndex = 0;
@@ -175,7 +176,7 @@ namespace EchoZone.Online.Migration
                             inventorySlots,
                             playerDto.health,
                             playerDto.stamina,
-                            playerDto.mana) { EquipmentJson = playerDto.equipmentJson }));
+                            playerDto.mana) { EquipmentJson = playerDto.equipmentJson, EscapeFinalized = playerDto.escapeFinalized }));
                 }
             }
 
@@ -230,6 +231,7 @@ namespace EchoZone.Online.Migration
         [Serializable]
         private sealed class PlayerMigrationDto
         {
+            public bool escapeFinalized;
             /// <summary>빈 장착 슬롯까지 보존하는 장비 복사본입니다.</summary>
             public string equipmentJson;
             /// <summary>playerId 값을 저장합니다.</summary>

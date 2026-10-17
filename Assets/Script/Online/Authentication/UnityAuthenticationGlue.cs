@@ -1,36 +1,57 @@
+using System.Threading.Tasks;
 using UnityEngine;
+using EchoZone.Online.Loading;
 
 namespace EchoZone.Online.Authentication
 {
     /// <summary>
-    /// Unity 씬의 시작 시점과 인증 Brick을 연결하는 Glue입니다.
-    /// 인증 결과는 개발 단계에서 확인할 수 있도록 Console에 기록합니다.
+    /// 실행당 하나의 계정 Service를 공유하며 시작 시에만 명시적 로그인 준비를 수행합니다.
     /// </summary>
     public sealed class UnityAuthenticationGlue : MonoBehaviour
     {
-        /// <summary>UGS 초기화와 플레이어 인증을 담당하는 독립 Brick입니다.</summary>
-        private readonly UnityAuthenticationService authenticationService = new();
+        private static UnityAccountAuthenticationService authenticationService;
+        private static Task<bool> initializationTask;
 
-        /// <summary>Relay 연결 Glue가 사용할 수 있는 인증 Brick입니다.</summary>
-        public UnityAuthenticationService AuthenticationService => authenticationService;
+        /// <summary>UI·Relay가 공유하는 유일한 계정 인증 Service입니다. 조회 자체로 초기화나 로그아웃하지 않습니다.</summary>
+        public UnityAccountAuthenticationService Service => authenticationService ??= new UnityAccountAuthenticationService();
 
-        /// <summary>씬이 시작되면 UGS 초기화와 익명 로그인을 순서대로 요청합니다.</summary>
-        private async void Start()
+        /// <summary>기존 Relay의 PlayerId 접근 연결을 유지하는 동일 Service 참조입니다.</summary>
+        public UnityAccountAuthenticationService AuthenticationService => Service;
+
+        /// <summary>도메인 리로드를 끈 Editor에서도 새 실행은 반드시 로그인부터 시작합니다.</summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetForNewExecution()
         {
-            bool succeeded =
-                await authenticationService.InitializeAndSignInAsync();
+            authenticationService = null;
+            initializationTask = null;
+        }
 
-            if (!succeeded)
-            {
-                Debug.LogError(
-                    $"Unity Authentication failed: {authenticationService.LastErrorMessage}",
-                    this);
-                return;
-            }
+        /// <summary>중복 Glue 또는 씬 재진입에도 최초 작업 하나만 시작하며 실패는 Service의 메시지로 전달합니다.</summary>
+        private void Start()
+        {
+            if (initializationTask == null) initializationTask = InitializeWithLoadingAsync();
+        }
 
-            EchoZone.Online.OnlineDebugLog.Info(
-                $"Unity Authentication succeeded. PlayerId: {authenticationService.PlayerId}",
-                this);
+        /// <summary>실패한 준비만 명시적으로 재시도하며 로그인된 계정은 초기화하지 않습니다.</summary>
+        public Task RetryInitializationAsync()
+        {
+            if (Service.IsSignedIn || initializationTask != null && !initializationTask.IsCompleted) return Task.CompletedTask;
+            initializationTask = InitializeWithLoadingAsync();
+            return initializationTask;
+        }
+
+        private async Task<bool> InitializeWithLoadingAsync()
+        {
+            var loading = GetComponent<LoadingOverlayGlue>();
+            long id = loading != null ? loading.Begin(LoadingOperationKind.Initialization, null,
+                () => Task.CompletedTask, RetryInitializationAsync) : 0;
+            var task = Service.InitializeForExplicitLoginAsync();
+            loading?.Track(task);
+            bool result = await task;
+            if (this == null || loading != null && !loading.State.Accepts(id)) return false;
+            if (result) { loading?.Complete(id, 0); loading?.Succeed(id); }
+            else loading?.Fail(id, Service.LastErrorMessage);
+            return result;
         }
     }
 }

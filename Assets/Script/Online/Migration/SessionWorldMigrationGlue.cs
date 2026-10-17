@@ -36,7 +36,7 @@ namespace EchoZone.Online.Migration
         { IsRestoring = false; appliedManager = null; appliedKey = null; runCatalogVersion = 0; pendingPlayers.Clear(); pendingPlayerStats.Clear(); }
 
         /// <summary>호스트 선출 이벤트에서 새 서버 AI가 실행되기 전에 장벽을 닫습니다.</summary>
-        public static void Begin() { IsRestoring = true; appliedKey = null; }
+        public static void Begin() { IsRestoring = true; appliedKey = null; HeistWorldGlue.Instance?.SetOnlineWorldReadyServer(false); }
 
         /// <summary>서버 복구 또는 클라이언트 재연결이 끝난 뒤 기존 루프를 재개합니다.</summary>
         public static void Complete() => IsRestoring = false;
@@ -170,6 +170,12 @@ namespace EchoZone.Online.Migration
                 if (obj == null || !obj.IsSpawned) continue;
                 string id = HeistWorldGlue.PlayerIdentity(client.ClientId);
                 if (!pendingPlayers.TryGetValue(id, out var record)) continue;
+                if (pendingPlayerStats.TryGetValue(id, out var previous) && previous.State?.EscapeFinalized == true)
+                {
+                    pendingPlayers.Remove(id);
+                    pendingPlayerStats.Remove(id);
+                    continue;
+                }
                 Place(obj, record.position, record.rotation);
                 float now = (float)manager.ServerTime.Time;
                 obj.GetComponent<NetworkWeaponFireGlue>()?.RestoreDefinition(record.weaponDefinitionId, record.weaponJson, RecoveryCatalog.Load().Version, now);

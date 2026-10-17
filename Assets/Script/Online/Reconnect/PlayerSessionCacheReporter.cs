@@ -69,7 +69,7 @@ namespace EchoZone.Online.Reconnect
 
             playerId = authenticatedPlayerId;
 
-            if (snapshot != null)
+            if (snapshot != null && !snapshot.EscapeFinalized)
             {
                 ApplySnapshot(snapshot, itemCatalog);
             }
@@ -145,7 +145,8 @@ namespace EchoZone.Online.Reconnect
                 cachedSlots,
                 playerStats.CurrentHealth,
                 playerStats.CurrentStamina,
-                playerStats.CurrentMana) { CatalogVersion = RecoveryCatalog.Load().Version,
+                playerStats.CurrentMana) { EscapeFinalized = GetComponent<EchoZone.Heist.PlayerWalletGlue>()?.IsEscapeFinalized == true,
+                    CatalogVersion = RecoveryCatalog.Load().Version,
                     EquipmentJson = GetComponent<EchoZone.Equipment.PlayerEquipmentGlue>()?.Capture(),
                     WeaponDefinitionId = weapon != null ? weapon.DefinitionId : null,
                     WeaponJson = weapon != null ? weapon.CaptureMigrationWeapon((float)NetworkManager.ServerTime.Time) : null };
@@ -154,7 +155,7 @@ namespace EchoZone.Online.Reconnect
         /// <summary>Host Migration Snapshot을 이미 Spawn된 서버 PlayerObject에 적용합니다.</summary>
         public void ApplyMigrationSnapshot(PlayerSessionSnapshot snapshot)
         {
-            if (!IsServer || snapshot == null)
+            if (!IsServer || snapshot == null || snapshot.EscapeFinalized)
             {
                 return;
             }

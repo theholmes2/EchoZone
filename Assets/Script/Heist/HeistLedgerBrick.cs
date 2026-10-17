@@ -32,12 +32,13 @@ namespace EchoZone.Heist
         public void Record(int building, ulong pet, ulong thief, int amount, string thiefPlayerId = null)
             => Record(building, pet.ToString(), thiefPlayerId ?? thief.ToString(), amount);
         /// <summary>고정 펫 ID와 인증 계정으로 절도 증거를 저장합니다.</summary>
-        public void Record(int building, string pet, string thief, int amount)
+        public string Record(int building, string pet, string thief, int amount)
         {
-            if (amount <= 0) return;
+            if (amount <= 0) return null;
             var e = new Entry { Building = building, Pet = pet, Thief = thief, Amount = amount, ThiefPlayerId = thief };
             e.Participants.Add(thief);
             entries.Add(e);
+            return e.Id;
         }
         /// <summary>펫을 가져간 사람은 장물 신고 보상 대상에서 제외합니다.</summary>
         public void Acquired(ulong pet, ulong player)
