@@ -41,7 +41,7 @@ Relay 기반 Host / Client 구조로 게임 판정과 상태 복제를 연결하
 ### A. 전체 네트워크 구조
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }"}}%%
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
 flowchart TD
     C["Client"] <-->|게임 패킷| R["Relay"]
     R <-->|게임 패킷| H["Host / NGO 서버"]
@@ -63,43 +63,57 @@ flowchart TD
 ### B. 로그인부터 탈출·개인 잔액 반영까지
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }"}}%%
-flowchart TD
-    subgraph Entry["1. 로그인 · 입장"]
-        L["① 로그인 / 회원가입<br/>Authentication에서 계정 확인"]
-        W["② 개인 Cloud 지갑 준비<br/>기존 잔액 유지 · 없을 때만 생성"]
-        Q{"③ 방 생성 또는 참가"}
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
+flowchart TB
+    subgraph Entry["1. 로그인 · 지갑 준비"]
+        direction LR
+        L["① 로그인 / 회원가입<br/>Authentication에서<br/>계정 확인"] --> W["② 개인 Cloud 지갑 준비<br/>기존 잔액 유지<br/>없을 때만 생성"]
+    end
+    subgraph Admission["2. 방 접속"]
+        direction LR
+        Q{"③ 방 생성<br/>또는 참가"}
         H["Host: Session 생성<br/>Relay / NGO Host 준비"]
         J["Client: 방 코드 참가<br/>Relay / NGO Client 연결"]
-        Ready["④ 연결 승인 · 플레이어 준비<br/>현재 방 상태 적용"]
-        L --> W --> Q
-        Q -->|생성| H
-        Q -->|참가| J
-        H --> Ready
-        J --> Ready
+        Ready["④ 연결 승인<br/>플레이어 준비<br/>현재 방 상태 적용"]
+        Q -->|생성| H --> Ready
+        Q -->|참가| J --> Ready
     end
-    subgraph Play["2. 플레이 · 임시 상태"]
-        Input["⑤ 행동 요청<br/>이동 · 전투 · 아이템 · 펫 절도"]
-        Judge["⑥ Host 검증 / 판정<br/>월드 · 인벤토리 · 장물 · 세션 지갑 갱신"]
-        Sync["⑦ 확정 상태 복제<br/>화면 / UI 반영 · 진행 중 전적 누적"]
+    subgraph Play["3. 플레이 · 임시 상태"]
+        direction LR
+        Input["⑤ 행동 요청<br/>이동 · 전투 · 아이템<br/>펫 절도"]
+        Judge["⑥ Host 검증 / 판정<br/>월드 · 인벤토리 · 장물<br/>세션 지갑 갱신"]
+        Sync["⑦ 확정 상태 복제<br/>화면 / UI 반영<br/>진행 중 전적 누적"]
         Input --> Judge --> Sync
+        Sync -->|계속 플레이| Input
     end
-    subgraph Exit["3. 탈출 · 영속 정산"]
-        E["⑧ 서버가 탈출 조건 확인<br/>금액 · 반납 목록 · 전적 요약 고정"]
-        P["⑨ 정산 요청 접수<br/>정산 번호 고정 / 미완료 정산 요청 보존"]
-        CP["⑩ 정산 준비 체크포인트 저장 확인"]
-        Money["⑪ 접수된 정산 요청 처리 재개<br/>개인 잔액 반영 · 변경 번호 증가<br/>정산 영수증 보존"]
-        Record["⑫ 완료 전적 확정<br/>돈 중복 지급 없이 전적 재시도"]
-        Finish["⑬ 반납 / 장물 정리 후<br/>정산 완료 체크포인트 저장 확인"]
-        Title["⑭ 탈출 성공 통지 · Session 퇴장<br/>타이틀 복귀 / 반영 잔액 조회"]
-        E --> P --> CP --> Money --> Record --> Finish --> Title
+    subgraph Prepare["4. 탈출 · 정산 요청 접수"]
+        direction LR
+        E["⑧ 서버가 탈출 조건 확인<br/>금액 · 반납 목록<br/>전적 요약 고정"]
+        P["⑨ 정산 요청 접수<br/>정산 번호 고정<br/>미완료 정산 요청 보존"]
+        CP["⑩ 정산 준비<br/>체크포인트 저장 확인"]
+        E --> P --> CP
     end
-    Ready --> Input
-    Sync -->|계속 플레이| Input
-    Sync -->|탈출 시도| E
+    subgraph Settle["5. 잔액 · 전적 반영"]
+        direction LR
+        Money["⑪ 접수된 정산 요청<br/>처리 재개<br/>개인 잔액 반영 · 변경 번호 증가<br/>정산 영수증 보존"]
+        Record["⑫ 완료 전적 확정<br/>돈 중복 지급 없이<br/>전적 재시도"]
+        Money --> Record
+    end
+    subgraph FinishFlow["6. 정리 · 타이틀 복귀"]
+        direction LR
+        Finish["⑬ 반납 / 장물 정리 후<br/>정산 완료 체크포인트<br/>저장 확인"]
+        Title["⑭ 탈출 성공 통지<br/>Session 퇴장<br/>타이틀 복귀<br/>반영 잔액 조회"]
+        Finish --> Title
+    end
+    Entry --> Admission --> Play
+    Play -->|탈출 시도| Prepare
+    Prepare --> Settle --> FinishFlow
     style Entry fill:#1E3553,stroke:#93B4DB,stroke-width:3px,color:#F8FAFC
+    style Admission fill:#1E3553,stroke:#93B4DB,stroke-width:3px,color:#F8FAFC
     style Play fill:#183C30,stroke:#8BC9A6,stroke-width:3px,color:#F8FAFC
-    style Exit fill:#49371D,stroke:#D9B66F,stroke-width:3px,color:#F8FAFC
+    style Prepare fill:#49371D,stroke:#D9B66F,stroke-width:3px,color:#F8FAFC
+    style Settle fill:#49371D,stroke:#D9B66F,stroke-width:3px,color:#F8FAFC
+    style FinishFlow fill:#49371D,stroke:#D9B66F,stroke-width:3px,color:#F8FAFC
     classDef default fill:#25354B,stroke:#93B4DB,stroke-width:2px,color:#F8FAFC
     linkStyle default stroke:#7189A8,stroke-width:2px,color:#F8FAFC
 ```
@@ -111,7 +125,7 @@ flowchart TD
 ### C-1. 로그인·지갑 준비·방 접속
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"20px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":32,"mirrorActors":false,"wrap":true,"actorFontSize":20,"messageFontSize":20,"noteFontSize":19,"actorFontWeight":700,"messageFontWeight":600,"noteFontWeight":700},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; font-weight: 600 !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; font-weight: 600 !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }"}}%%
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":35,"width":130,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":30,"mirrorActors":false,"wrap":false,"actorFontSize":18,"messageFontSize":18,"noteFontSize":18,"actorFontWeight":400,"messageFontWeight":400,"noteFontWeight":400},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
 sequenceDiagram
     participant G as 게임
     participant A as 인증
@@ -146,7 +160,7 @@ sequenceDiagram
 ### C-2. 플레이: 요청 → 판정 → 상태 복제
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }"}}%%
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
 flowchart TD
     Input["① Client · 행동 입력"]
     Check{"② Host · 요청 검증"}
@@ -176,7 +190,7 @@ Client의 행동 요청은 Host에서 검증한 뒤 확정 상태로 복제하�
 ### C-3. 아이템 획득·인벤토리 반영
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"20px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":32,"mirrorActors":false,"wrap":true,"actorFontSize":20,"messageFontSize":20,"noteFontSize":19,"actorFontWeight":700,"messageFontWeight":600,"noteFontWeight":700},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; font-weight: 600 !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; font-weight: 600 !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }"}}%%
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":35,"width":130,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":30,"mirrorActors":false,"wrap":false,"actorFontSize":18,"messageFontSize":18,"noteFontSize":18,"actorFontWeight":400,"messageFontWeight":400,"noteFontWeight":400},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
 sequenceDiagram
     participant C as Client
     participant H as Host
@@ -203,7 +217,7 @@ sequenceDiagram
 ### C-4. 탈출·개인 잔액·완료 전적
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"20px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":32,"mirrorActors":false,"wrap":true,"actorFontSize":20,"messageFontSize":20,"noteFontSize":19,"actorFontWeight":700,"messageFontWeight":600,"noteFontWeight":700},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; font-weight: 600 !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; font-weight: 600 !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }"}}%%
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":35,"width":130,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":30,"mirrorActors":false,"wrap":false,"actorFontSize":18,"messageFontSize":18,"noteFontSize":18,"actorFontWeight":400,"messageFontWeight":400,"noteFontWeight":400},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
 sequenceDiagram
     participant H as Host
     participant C as Cloud Code
@@ -250,7 +264,7 @@ sequenceDiagram
 ### C-5. 저장 데이터와 보존 위치
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }"}}%%
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
 flowchart TB
     Root["게임 데이터"]
     Root --> Live["실시간 상태"]
@@ -278,19 +292,39 @@ flowchart TB
 ### C-6. Client 재접속과 Host 교체의 분기
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }"}}%%
-flowchart TD
-    D["예상하지 못한 연결 단절"] --> K["현재 Session / 멤버십 유지<br/>Refresh / Reconnect 및 상태 확인"]
-    K --> T{"서비스가 확인한 현재 Host 상태"}
-    T -->|기존 Host 유지| C["Client 재접속<br/>재접속 티켓 확인 / 캐시 상태 복원"]
-    T -->|Host 변경 이벤트| M["MPS 선출 결과에 따라 역할 전환<br/>Relay / NGO 재구성"]
-    M --> N["새 Host가 Migration Snapshot과<br/>Cloud 체크포인트 검토"]
-    N --> V{"현재 Run의 유효한 Snapshot 존재?"}
-    V -->|예| A["같은 Run의 유효한 최신 Snapshot 복원<br/>플레이어 / 월드 / 타이머 / 런타임 참조 복원"]
-    A --> B["복구 완료 조건 확인 후 플레이 재개"]
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#7189A8","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#1E3553","actorBorder":"#93B4DB","actorTextColor":"#F8FAFC","signalColor":"#F8FAFC","signalTextColor":"#F8FAFC","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#F8FAFC","loopTextColor":"#F8FAFC","noteBkgColor":"#25354B","noteTextColor":"#F8FAFC","noteBorderColor":"#93B4DB","textColor":"#F8FAFC","titleColor":"#F8FAFC","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#CBD5E1","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":12,"rankSpacing":22,"padding":10,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":28,"mirrorActors":false,"wrap":true,"actorFontSize":18,"messageFontSize":18,"noteFontSize":17},"darkMode":true,"themeCSS":"text, tspan { fill: #F8FAFC !important; } .nodeLabel, .nodeLabel p, .nodeLabel span, .edgeLabel, .edgeLabel p, .cluster-label, .cluster-label p { color: #F8FAFC !important; } .messageText, .noteText, .labelText, .loopText { fill: #F8FAFC !important; color: #F8FAFC !important; } .messageLine0, .messageLine1, .actor-line { stroke: #E2E8F0 !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
+flowchart TB
+    subgraph Detect["1. 연결 상태 확인"]
+        direction LR
+        D["예상하지 못한<br/>연결 단절"] --> K["현재 Session 유지<br/>멤버십 유지<br/>Refresh / Reconnect<br/>상태 확인"]
+    end
+    T{"서비스가 확인한<br/>현재 Host 상태"}
+    C["Client 재접속<br/>재접속 티켓 확인<br/>캐시 상태 복원"]
+    subgraph Migration["2. Host 교체 · 검증"]
+        direction LR
+        M["MPS 선출 결과에 따라<br/>역할 전환<br/>Relay / NGO 재구성"]
+        N["새 Host가<br/>Migration Snapshot과<br/>Cloud 체크포인트 검토"]
+        M --> N
+    end
+    V{"현재 Run의 유효한<br/>Snapshot 존재?"}
+    subgraph Restore["3. 복원 · 재개"]
+        direction LR
+        A["같은 Run의 유효한<br/>최신 Snapshot 복원<br/>플레이어 / 월드 / 타이머<br/>런타임 참조 복원"]
+        B["복구 완료 조건 확인 후<br/>플레이 재개"]
+        A --> B
+    end
+    F["복구 실패 표시<br/>기본 월드 대체 없음"]
+    Detect --> T
+    T -->|기존 Host 유지| C
+    T -->|Host 변경 이벤트| Migration
+    Migration --> V
+    V -->|예| A
+    V -->|아니오| F
     C --> B
-    V -->|아니오| F["복구 실패 표시<br/>기본 월드로 조용히 대체하지 않음"]
-    K -->|서비스 오류 / 제한 시간 초과| F
+    Detect -->|서비스 오류<br/>제한 시간 초과| F
+    style Detect fill:#1E3553,stroke:#93B4DB,stroke-width:2px,color:#F8FAFC
+    style Migration fill:#49371D,stroke:#D9B66F,stroke-width:2px,color:#F8FAFC
+    style Restore fill:#183C30,stroke:#8BC9A6,stroke-width:2px,color:#F8FAFC
     classDef default fill:#25354B,stroke:#93B4DB,stroke-width:2px,color:#F8FAFC
     linkStyle default stroke:#7189A8,stroke-width:2px,color:#F8FAFC
 ```
@@ -300,7 +334,7 @@ flowchart TD
 ### C-7. Host Migration: 같은 방의 상태 이어가기
 
 ```mermaid
-%%{init: {"theme":"dark","themeVariables":{"fontSize":"20px","fontFamily":"sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":12},"sequence":{"actorMargin":24,"width":110,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":32,"mirrorActors":false,"wrap":true,"actorFontSize":20,"messageFontSize":20,"noteFontSize":19,"actorFontWeight":700,"messageFontWeight":600,"noteFontWeight":700},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; font-weight: 600 !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; font-weight: 600 !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }"}}%%
+%%{init: {"theme":"dark","themeVariables":{"fontSize":"18px","fontFamily":"Arial, Malgun Gothic, sans-serif","primaryColor":"#1E3553","primaryTextColor":"#F8FAFC","primaryBorderColor":"#93B4DB","lineColor":"#DCE6F5","secondaryColor":"#183C30","tertiaryColor":"#49371D","clusterBkg":"#1E3553","clusterBorder":"#93B4DB","actorBkg":"#12243A","actorBorder":"#93B4DB","actorTextColor":"#FFFFFF","signalColor":"#FFFFFF","signalTextColor":"#FFFFFF","labelBoxBkgColor":"#49371D","labelBoxBorderColor":"#D9B66F","labelTextColor":"#FFFFFF","loopTextColor":"#FFFFFF","noteBkgColor":"#182A40","noteTextColor":"#FFFFFF","noteBorderColor":"#93B4DB","textColor":"#FFFFFF","titleColor":"#FFFFFF","secondaryTextColor":"#F8FAFC","tertiaryTextColor":"#F8FAFC","edgeLabelBackground":"#111827","nodeTextColor":"#F8FAFC","actorLineColor":"#E2E8F0","activationBorderColor":"#CBD5E1","activationBkgColor":"#25354B","darkMode":true,"background":"#111827"},"flowchart":{"nodeSpacing":22,"rankSpacing":28,"padding":18,"htmlLabels":false,"wrappingWidth":360,"subGraphTitleMargin":{"top":8,"bottom":18}},"sequence":{"actorMargin":35,"width":130,"height":44,"diagramMarginX":8,"diagramMarginY":12,"messageMargin":30,"mirrorActors":false,"wrap":false,"actorFontSize":18,"messageFontSize":18,"noteFontSize":18,"actorFontWeight":400,"messageFontWeight":400,"noteFontWeight":400},"darkMode":true,"themeCSS":"text, tspan { fill: #FFFFFF !important; } .messageText, .noteText, .labelText, .loopText { fill: #FFFFFF !important; color: #FFFFFF !important; } .messageLine0, .messageLine1 { stroke: #FFFFFF !important; stroke-width: 2.5px !important; } .actor-line { stroke: #CBD5E1 !important; stroke-width: 1.5px !important; } marker path { fill: #FFFFFF !important; stroke: #FFFFFF !important; } .note, .labelBox { stroke: #AFC7E8 !important; stroke-width: 1.5px !important; }","fontFamily":"Arial, Malgun Gothic, sans-serif"}}%%
 sequenceDiagram
     participant S as MPS
     participant H as 새 Host
