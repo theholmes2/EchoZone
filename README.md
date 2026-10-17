@@ -6,7 +6,7 @@
 
 ## 플레이 영상
 
-> (https://youtu.be/w-4-7HQheYw)
+> (https://youtu.be/tE5l8Fiq7lM)
 
 ## 플레이 방법
 
