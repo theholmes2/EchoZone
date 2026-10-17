@@ -287,7 +287,7 @@ flowchart TB
     linkStyle default stroke:#7189A8,stroke-width:2px,color:#F8FAFC
 ```
 
-별도 RDB 서버의 구축·운영 부담을 줄이기 위해 계정별 지갑과 Run별 월드 JSON을 관리형 Cloud Save에 보존하고, 중요한 쓰기를 Cloud Code에서 검증합니다. 실시간 원본·Migration Snapshot·영속 체크포인트의 역할을 나누고, 저장 간 일관성은 정산 번호와 완료 기록으로 관리합니다.
+플레이 중 상태는 Host가 관리하고, 개인 지갑·완료 전적·월드 체크포인트는 Unity Cloud Save에 저장합니다. 별도의 데이터베이스 운영 부담을 줄이면서, 중요한 저장 요청은 Cloud Code에서 검증하도록 구성했습니다.
 
 ### C-6. Client 재접속과 Host 교체의 분기
 
