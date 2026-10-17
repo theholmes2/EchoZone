@@ -257,7 +257,7 @@ sequenceDiagram
 
 정산 번호와 지급 내용을 고정해 재시도에서도 같은 영수증을 대조하고, 지갑 변경 번호와 조건부 저장으로 갱신 순서를 관리합니다. 지급 결과를 확인한 뒤 장물을 정리하고 완료 체크포인트를 보존해, 각 단계의 완료 기록을 따라 정산을 이어갑니다.
 
-`Pending`은 **미완료 정산 요청**, `Revision`은 **지갑 변경 번호**, `PrepareEscape`는 **정산 요청 접수**입니다. 지갑 조회는 기존 미완료 정산 요청의 처리를 재개할 수 있으며, 이미 지급한 요청은 정산 영수증을 재사용합니다.
+지갑 조회는 기존 미완료 정산 요청의 처리를 재개할 수 있으며, 이미 지급한 요청은 정산 영수증을 재사용합니다.
 
 공식 문서: [Cloud Code를 통한 데이터 저장](https://docs.unity.com/en-us/cloud-save/tutorials/cloud-code) · [Cloud Save 조건부 저장](https://docs.unity.com/en-us/cloud-save/concepts/write-locks)
 
